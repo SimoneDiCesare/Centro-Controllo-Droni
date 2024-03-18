@@ -24,11 +24,11 @@ La torre invierà un pacchetto di tipo **0x02** al drone, che conterrà le coord
 La torre invierà un pacchetto di tipo **0x03** al drone, richiedendo in dietro lo stato del drone.
 ### Risposta Info
 Il drone invierà, in risposta al pacchetto **0x03**, anch'esso un pacchetto di tipo **0x03**, con all'interno le seguenti informazioni:
-- ID Drone: u16
-- Posizione: (x, y) 2*u16
-- Area Ricoperta: (x1, y1, x2, y2) 4*u16
-- Batteria: u8
-- Stato: u8 (Rappresenta in che stato si trova il drone: (CHARGING,READY,MONITORING)
+- **ID Drone**: u16
+- **Posizione**: (x, y) 2*u16
+- **Area Ricoperta**: (x1, y1, x2, y2) 4*u16
+- **Batteria**: u8
+- **Stato**: u8 (Rappresenta in che stato si trova il drone: (CHARGING,READY,MONITORING)
 
 ### Richiesta Rientro
 Quando il drone avrà scarsa autonomia rimasta, invierà una richiesta di rientro alla torre con codice **0x04**.
