@@ -26,6 +26,17 @@ private:
 public:
     Droni(int X, int Y, char16_t stato, int batteria);
     ~Droni();
+    //Set
+    void SetID(int id);
+    
+    void Movimento(int X, int Y);
+    //Get
+    char16_t GetStato();
+    int GetBatteria();
+    int GetVelocita();
+    int GetRaggio();
+    int GetPosX ();
+    int GetPosY ();
 private:
-    void AsseganazioneID();
+
 };

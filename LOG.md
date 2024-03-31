@@ -8,5 +8,9 @@ Generalmente, i LOG presentano il seguente formato:\
 > 1. System Time del log (a partire dall'avvio del sistema, o con orario del sistema)
 > 2. Messaggio del log (cosa è successo e da chi)
 
+[tempo][tipo mersaggio*][chi][a chi(opzionale)][cosa fa]
+*ex mesaggio errore o di info
+
+
 ## Ulteriori Info
 > Aggiungere info se necessarie
