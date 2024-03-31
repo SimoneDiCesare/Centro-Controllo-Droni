@@ -1,5 +1,4 @@
 #include <iostream>
-#include <chrono>
 //Coordinate XY -> PosX e PosY
 //Stato InRicarica / InAzione -> Stt 
 //Ricarica massima -> Max Power -> MaxPwr

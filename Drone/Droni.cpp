@@ -1,6 +1,6 @@
-#include "ClassDroni"
+#include "ClassDroni.hpp"
 #include <iostream>
- 
+
 Droni::Droni(int X, int Y, char16_t stato, int batteria)
 {
     AsseganazioneID();
