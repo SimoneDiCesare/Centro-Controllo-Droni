@@ -35,7 +35,7 @@ Quando il drone avrà scarsa autonomia rimasta, invierà una richiesta di rientr
 ### Risposta Rientro
 Se la torre riceverà una richiesta di rientro, invierà al drone un messaggio di conferma con codice **0x04**, e si occuperà di sostituirlo con un nuovo drone con stato READY.
 
-# Tabella Riassuntiva
+## Tabella Riassuntiva
 
 | Codice | Dati | Info |
 |:------:|:-----|:-----|
@@ -43,3 +43,16 @@ Se la torre riceverà una richiesta di rientro, invierà al drone un messaggio d
 |0x02|Coordinate (x,y)|Richiesta Spostamento Drone|
 |0x03|Nessuno, Oppure Info del Drone|Richiesta e Risposta Info Drone|
 |0x04|Nessuno|Richiesta e Risposta Rientro|
+
+# Implementazione
+La Torre di Controllo ed i Droni si scambiano i vari messaggi attraverso Redis.
+Redis è configurato per funzionare sulla porta **SCEGLIERE PORTA**, e gestisce delle liste di messaggi associati agli attori del sistema.
+Ogni attora ha associato un ID (la torre avrò sempre ID 0, mentre i droni avranno un ID assegnato dalla torre in fase di inizializzazione).
+L'ID è usata come chiave Redis, e contiene come contenuto una lista di Messaggi, i quali presentano la struttura descritta in precedenza.
+Il funzionamento base è il seguente:
+1. L'Attore controlla se associato al suo ID è presente una lista di messaggi non vuota
+2. L'Attore legge il primo elemento della lista, rimuovendolo da essa stessa.
+3. L'Attore elabora il pacchetto.
+4. Se è presente un'altro elemento all'interno della lista, si riparte dal numero 2.
+> **NOTA**:
+> L'Attore continuerà a svolgere le sue funzioni a prescindere dalla presenza o meno di contenuto all'interno di Redis, a patto che abbia azioni da svolgere.
