@@ -37,6 +37,8 @@ public:
     int GetRaggio();
     int GetPosX ();
     int GetPosY ();
+    // Accelerazione serve anche per fermare il Drone 
+    void Accelerazione(int vel);
 private:
-
+    
 };
