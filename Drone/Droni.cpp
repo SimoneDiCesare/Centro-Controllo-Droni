@@ -21,6 +21,10 @@ void Droni::SetID(int id){
     ID = id;
 }
 
+void Droni::SetStt(char16_t Stato){
+    Stt = Stato;
+}
+
 void Droni::Movimento(int X, int Y){
     // aggiungere controllo per non fare uscire i droni dai confini della griglia 
     PosX = X;
