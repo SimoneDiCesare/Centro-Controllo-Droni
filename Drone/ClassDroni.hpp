@@ -28,7 +28,8 @@ public:
     ~Droni();
     //Set
     void SetID(int id);
-    
+    void SetStt(char16_t Stato); 
+
     void Movimento(int X, int Y);
     //Get
     char16_t GetStato();
