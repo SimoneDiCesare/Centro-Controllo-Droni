@@ -23,6 +23,7 @@ Message::Message(int messageId) {
 }
 
 Message::~Message() {
+
 }
 
 int Message::getMessageId() {
@@ -62,6 +63,36 @@ void PingMessage::parseResponse(RedisResponse *response) {
 
 std::string PingMessage::parseMessage() {
     return "type 0";
+}
+
+// AssociateMessage
+
+AssociateMessage::AssociateMessage(std::string id, int droneId) : Message(id) {
+    this->droneId = droneId;
+}
+
+AssociateMessage::AssociateMessage(int messageId, int droneId) : Message(messageId) {
+    this->droneId = droneId;
+} 
+
+void AssociateMessage::parseResponse(RedisResponse* response) {
+    if (response->getType() == VECTOR) {
+        std::vector<std::string> data = response->getVectorContent();
+        for (int i = 0; i < data.size(); i++) {
+            std::string value = data[i];
+            if (value.compare("droneId") == 0) {
+                this->droneId = std::stoi(data[i + 1]);
+            }
+        }
+    }
+}
+
+std::string AssociateMessage::parseMessage() {
+    return "type 1 droneId " + std::to_string(this->droneId);
+}
+
+int AssociateMessage::getDroneId() {
+    return this->droneId;
 }
 
 // Channel Class

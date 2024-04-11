@@ -25,6 +25,17 @@ class PingMessage : public Message {
         std::string parseMessage();
 };
 
+class AssociateMessage : public Message {
+    public:
+        AssociateMessage(std::string id, int droneId);
+        AssociateMessage(int messageId, int droneId);
+        void parseResponse(RedisResponse*);
+        std::string parseMessage();
+        int getDroneId();
+    private:
+        int droneId;
+};
+
 class Channel {
     public:
         Channel(int id);
