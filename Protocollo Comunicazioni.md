@@ -1,3 +1,15 @@
+<style>
+
+table, th, td {
+
+  border: 1px solid black;
+
+  border-collapse: collapse;
+
+}
+
+</style>
+
 # Protocollo Comunicazioni
 La Torre di Controllo ed i Droni comunicano in maniera asincrona.
 Le comunicazioni avvengono tramite Redis.
@@ -66,3 +78,19 @@ Nella quale type_value è un intero che rappresenta il tipo del messaggio, mentr
 > ```c++
 > return "type 2 x " + std::to_string(this->x) + " y " + std::to_string(this->y);
 > ```
+___
+### Lista Messaggi
+<table>
+
+|Classe|Tipo|Parametri|Info|
+|:---|:---|:---|:--|
+|PingMessage|0|nessuno|Messaggio di Ping|
+|AssociateMessage|1|drone_id:int|Messagio di associazione drone<->torre|
+
+</table>
+
+> **DA AGGIUNGERE:**
+> - Messaggio Info Drone: Invia alla torre info dettagliate sul drone
+> - Messaggio Cambio Direzione: Torre invia nuova posizione al drone
+> - Messaggio di Rientro: Drone con batteria scarica deve rientrate
+> - **Verificare Altro**
