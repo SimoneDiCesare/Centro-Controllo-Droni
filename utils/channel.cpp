@@ -95,6 +95,36 @@ int AssociateMessage::getDroneId() {
     return this->droneId;
 }
 
+// Drone Info Message Class
+
+DroneInfoMessage::DroneInfoMessage(std::string id, int droneId) : Message(id) {
+    this->droneId = droneId;
+}
+
+DroneInfoMessage::DroneInfoMessage(int messageId, int droneId) : Message(messageId) {
+    this->droneId = droneId;
+} 
+
+void DroneInfoMessage::parseResponse(RedisResponse* response) {
+    if (response->getType() == VECTOR) {
+        std::vector<std::string> data = response->getVectorContent();
+        for (int i = 0; i < data.size(); i++) {
+            std::string value = data[i];
+            if (value.compare("droneId") == 0) {
+                this->droneId = std::stoi(data[i + 1]);
+            }
+        }
+    }
+}
+
+std::string DroneInfoMessage::parseMessage() {
+    return "type 2 droneId " + std::to_string(this->droneId);
+}
+
+int DroneInfoMessage::getDroneId() {
+    return this->droneId;
+}
+
 // Channel Class
 
 Channel::Channel(int id) {

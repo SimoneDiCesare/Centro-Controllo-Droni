@@ -36,6 +36,52 @@ class AssociateMessage : public Message {
         int droneId;
 };
 
+// TODO: - Define in channel.cpp
+
+class DroneInfoMessage : public Message {
+    public:
+        DroneInfoMessage(std::string id, int droneId);
+        DroneInfoMessage(int messageId, int droneId);
+        void parseResponse(RedisResponse*);
+        std::string parseMessage();
+        int getDroneId();
+    private:
+        // TODO: -Fill Fields
+        int droneId;
+};
+
+class LocationMessage : public Message {
+    public:
+        LocationMessage(std::string id, int droneId);
+        LocationMessage(int messageId, int droneId);
+        void parseResponse(RedisResponse*);
+        std::string parseMessage();
+        int getX();
+        int getY();
+    private:
+        int x;
+        int y;
+};
+
+class RetireMessage : public Message {
+    public:
+        RetireMessage(std::string id, int droneId);
+        RetireMessage(int messageId, int droneId);
+        void parseResponse(RedisResponse*);
+        std::string parseMessage();
+};
+
+class DisconnectMessage: public Message {
+    public:
+        DisconnectMessage(std::string id, int droneId);
+        DisconnectMessage(int messageId, int droneId);
+        void parseResponse(RedisResponse*);
+        std::string parseMessage();
+        bool getStatus();
+    private:
+        bool status;
+};
+
 class Channel {
     public:
         Channel(int id);
