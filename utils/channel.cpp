@@ -96,6 +96,7 @@ int AssociateMessage::getDroneId() {
 }
 
 // Drone Info Message Class
+// TODO: Add all drone infos
 
 DroneInfoMessage::DroneInfoMessage(std::string id, int droneId) : Message(id) {
     this->droneId = droneId;
@@ -123,6 +124,43 @@ std::string DroneInfoMessage::parseMessage() {
 
 int DroneInfoMessage::getDroneId() {
     return this->droneId;
+}
+
+// Location Message Class
+
+LocationMessage::LocationMessage(std::string id) : Message(id) {
+    
+}
+
+LocationMessage::LocationMessage(int messageId) : Message(messageId) {
+    
+}
+
+void LocationMessage::parseResponse(RedisResponse* response) {
+    if (response->getType() == VECTOR) {
+        std::vector<std::string> data = response->getVectorContent();
+        for (int i = 0; i < data.size(); i++) {
+            std::string value = data[i];
+            if (value.compare("x") == 0) {
+                this->x = std::stoi(data[i + 1]);
+            }
+            if (value.compare("y") == 0) {
+                this->y = std::stoi(data[i + 1]);
+            }
+        }
+    }
+}
+
+std::string LocationMessage::parseMessage() {
+    return "type 3 x " + std::to_string(this->x) + " y " + std::to_string(this->y);
+}
+
+int LocationMessage::getX() {
+    return this->x;
+}
+
+int LocationMessage::getY() {
+    return this->y;
 }
 
 // Channel Class
@@ -207,7 +245,7 @@ Message* Channel::awaitMessage(long timeout) {
         return NULL;
     } else {
         int queueLength = std::stoi(response->getContent());
-        std::cout << "Messages in queue: " << queueLength << "\n";
+        // std::cout << "Messages in queue: " << queueLength << "\n";
         if (queueLength > 0) {
             delete response;
             response = this->redis->sendCommand("RPOP " + channelId);

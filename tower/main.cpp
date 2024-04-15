@@ -10,6 +10,7 @@ int main(int argc, char* argv[]) {
     }
     std::cout << "========================\n";
     Tower tower;
+    tower.connect("127.0.0.1", 6379);
     tower.start();
     return 0;
 }

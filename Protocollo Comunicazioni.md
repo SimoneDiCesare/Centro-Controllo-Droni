@@ -86,11 +86,11 @@ ___
 |:---|:---|:---|:--|
 |PingMessage|0|nessuno|Messaggio di Ping|
 |AssociateMessage|1|drone_id:int|Messagio di associazione drone<->torre|
+|DroneInfoMessage|2|{params}|Scambio parametri drone->torre|
+|LocationMessage|3|x:int,y:int|Nuova posizione per drone dalla torre|
 
 </table>
 
 > **DA AGGIUNGERE:**
-> - Messaggio Info Drone: Invia alla torre info dettagliate sul drone
-> - Messaggio Cambio Direzione: Torre invia nuova posizione al drone
 > - Messaggio di Rientro: Drone con batteria scarica deve rientrate
 > - **Verificare Altro**

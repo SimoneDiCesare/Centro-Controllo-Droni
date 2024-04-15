@@ -52,8 +52,8 @@ class DroneInfoMessage : public Message {
 
 class LocationMessage : public Message {
     public:
-        LocationMessage(std::string id, int droneId);
-        LocationMessage(int messageId, int droneId);
+        LocationMessage(std::string id);
+        LocationMessage(int messageId);
         void parseResponse(RedisResponse*);
         std::string parseMessage();
         int getX();
