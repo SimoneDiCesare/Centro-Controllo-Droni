@@ -2,12 +2,11 @@
 CREATE TYPE DSTATE AS ENUM('waiting', 'charging', 'monitoring');
 -- Drone Table Creation and Clearing
 CREATE TABLE IF NOT EXISTS drone (
-    id SERIAL PRIMARY KEY,
-    x FLOAT NOT NULL,
-    y FLOAT NOT NULL,
+    id BIGINT PRIMARY KEY NOT NULL,
+    x INTEGER NOT NULL,
+    y INTEGER NOT NULL,
     battery_autonomy INTERVAL,
     battery_life INTERVAL,
-    max_autonomy INTERVAL,
     dstate DSTATE,
     last_update TIMESTAMP,
     CHECK(id > 0)

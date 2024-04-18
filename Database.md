@@ -3,15 +3,20 @@ All'interno del progetto viene sfruttato un  database **PostreSql** per salvare 
 ## Struttura del Database
 Il Database presenta un'unica tabella: **drone**, la quale contiene le informazioni dei vari droni con il seguente schema:
 
-|Nome       |Tipo   |Info                                     |
-|:---------:|:-----:|:----------------------------------------|
-|id         |integer|Id univoco del drone                     |
-|x          |integer|coordinata x del drone all'ultimo update |
-|y          |integer|coordinata y del drone all'ultimo update |
-|battery    |integer|batteria del drone all'ultimo update     |
-|max_battery|integer|capacità massima della batteria del drone|
-|state      |enum   |stato del drone all'ultimo update        |
-|last_update|date   |timestamp dell'ultimo update             | 
+|Nome            |Tipo     |Info                                     |
+|:--------------:|:-------:|:----------------------------------------|
+|id              |int 64bit|Id > 0 univoco del drone                 |
+|x               |integer  |coordinata x del drone all'ultimo update |
+|y               |integer  |coordinata y del drone all'ultimo update |
+|battery_autonomy|interval |durata della batteria all'ultimo update  |
+|battery_life    |interval |durata massima della batteria del drone  |
+|dstate          |enum     |stato del drone all'ultimo update        |
+|last_update     |timestamp|timestamp dell'ultimo update             |
+
+L'Enum del campo di state è definita in questa maniera:
+```sql
+CREATE TYPE DSTATE AS ENUM('waiting', 'charging', 'monitoring')
+```
 
 >**TODO**:
 > - Modificare la tabella coerentemente con il codice e il db
