@@ -28,12 +28,15 @@ private:
 public:
     Droni(int X, int Y, char16_t stato, int batteria);
     ~Droni();
+
     //Set
-    void SetID(int id);
+    int SetID(int id);
     void SetStt(char16_t Stato); 
 
     void Movimento(int X, int Y);
     void Start();
+    void connect(std::string ip, int port);
+    void handleMessage(Message* message);
 
     //Get
     char16_t GetStato();
@@ -42,8 +45,10 @@ public:
     int GetRaggio();
     int GetPosX ();
     int GetPosY ();
-    // Accelerazione serve anche per fermare il Drone 
+
+    // Accelerazione serve anche per fermare il Drone ?
     void Accelerazione(int vel);
 private:
     Channel* channel;
+    static bool running;
 };
