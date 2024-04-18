@@ -46,7 +46,7 @@ class DroneInfoMessage : public Message {
         std::string parseMessage();
         int getDroneId();
     private:
-        // TODO: -Fill Fields
+        // TODO: - Fill Fields
         int droneId;
 };
 
