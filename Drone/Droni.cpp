@@ -1,5 +1,11 @@
 #include "ClassDroni.hpp"
 #include <iostream>
+#include "channel.hpp"
+#include <csignal>
+#include <cstdlib>
+#include <thread>
+#include <vector>
+
 
 Droni::Droni(int X, int Y, char16_t stato, int batteria)
 {   

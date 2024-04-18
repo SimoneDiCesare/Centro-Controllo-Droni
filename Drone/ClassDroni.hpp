@@ -1,4 +1,6 @@
 #include <iostream>
+#include "channel.hpp"
+
 //Coordinate XY -> PosX e PosY
 //Stato InRicarica / InAzione -> Stt 
 //Ricarica massima -> Max Power -> MaxPwr
@@ -31,6 +33,8 @@ public:
     void SetStt(char16_t Stato); 
 
     void Movimento(int X, int Y);
+    void Start();
+
     //Get
     char16_t GetStato();
     int GetBatteria();
@@ -41,5 +45,5 @@ public:
     // Accelerazione serve anche per fermare il Drone 
     void Accelerazione(int vel);
 private:
-    
+    Channel* channel;
 };
