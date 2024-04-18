@@ -1,20 +1,11 @@
 #include <iostream>
 #include <string>
-#include "redis.hpp"
-#include "tower.hpp"
-#include "channel.hpp"
-
+#include "postgresql.hpp"
 int main() {
-    Channel *channel = new Channel(0);
-    channel->connect();
-    Message *message = new PingMessage(0);
-    bool sended = channel->sendMessageTo(0, *message);
-    std::cout << "Sended: " << sended << "\n";
-    delete message;
-    message = channel->awaitMessage(5);
-    delete message;
-    delete channel;
-    // Tower tower;
-    // tower.start();
+    struct PostgreArgs args;
+    Postgre p(args);
+    auto [success,  result] = p.execute("TRUNCATE TABLE drone");
+    std::cout << success << " - " << result.empty() << "\n";
+    std::cout << p.truncateTable("drone") << "\n";
     return 0;
 }

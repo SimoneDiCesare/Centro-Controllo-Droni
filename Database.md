@@ -25,23 +25,17 @@ L'eseguibile della torre prende come parametro facoltativo un file di properties
 ```
 Un esempio di file base è il seguente:
 ```ini
-[Path]=/data/test/db
+[Ip]=http://mydomain.com/db
 [User]=root
-```
-Se invece il database è hostato:
-```ini
-[Path]=http://dburl.com
-[Port]=5342
-[User]=myuser
-[Password]=mypassword
 ```
 ### Lista DB File Properties 
 |Opzione |Tipo   |Info                                        |
 |:------:|:-----:|:-------------------------------------------|
-|Path    |String |Percorso (o url) del db                     |
+|Ip      |String |Ip alla connessione postgre                 |
 |Port    |Integer|Porta d'accesso del db (solo in caso di url)|
 |User    |String |Username per accedere al db                 |
 |Password|String |Password in chiaro per accedere al db       |
+|DbName  |String |Nome del db da utilizzare                   |
 
 > **NOTA:**\
 > L eproperties di base sono quelle di default di postgre (ip e port), con un utente chiamato **tower** senza password.
