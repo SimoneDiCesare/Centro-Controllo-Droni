@@ -2,7 +2,8 @@
 # Compiler and Flags
 CC = gcc
 CCFLAGS = -O2 -Iutils
-LIBS = -lstdc++ #-lpqxx -lpq
+LIBS = -lstdc++
+POSTGRESQL_LIBS = -lpqxx -lpq
 TOWER_FILES = tower/main.cpp tower/tower.cpp
 DRONE_FILES = Drone/main.cpp Drone/Droni.cpp
 REDIS_FILES = utils/redis.cpp utils/channel.cpp
@@ -18,7 +19,7 @@ $(shell mkdir -p bin)
 
 # Tower Executable
 tower: $(TOWER_FILES) $(REDIS_FILES)
-	$(CC) $(CCFLAGS) $(TOWER_FILES) $(REDIS_FILES) -o bin/tower $(LIBS)
+	$(CC) $(CCFLAGS) $(TOWER_FILES) $(REDIS_FILES) -o bin/tower $(LIBS) $(POSTGRESQL_LIBS)
 
 # Drone Executable
 drone: $(DRONE_FILES) $(REDIS_FILES)
