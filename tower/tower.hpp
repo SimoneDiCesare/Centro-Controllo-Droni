@@ -14,6 +14,9 @@ class Tower {
         static bool running;
         static void handleSignal(int signal);
         Channel* channel;
+        int messageCount;
+        // Handle functions
+        void handleAssociation(AssociateMessage*);
 };
 
 #endif

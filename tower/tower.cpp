@@ -67,34 +67,42 @@ void Tower::start() {
     //       - Exit with received signal 
 }
 
+void Tower::handleAssociation(AssociateMessage *message) {
+    int id = message->getDroneId();
+    // TODO: - Check validity inside db
+    int newId = id;
+    AssociateMessage *m = new AssociateMessage(this->messageCount, newId);
+    this->messageCount++;
+    this->channel->sendMessageTo(id, *m);
+}
+
 void Tower::handleMessage(Message* message) {
-    if (message == NULL) {
+    if (message == nullptr) {
         return;
     }
     int type = message->getType();
     switch (type) {
-        case 0:
+        case 0: {
             std::cout << "Ping Message\n";
             break;
-        case 1:
-            std::cout << "Associate Message\n";
+        }
+        case 1: {
+            this->handleAssociation(dynamic_cast<AssociateMessage*>(message));
             break;
-        case 2:
+        }
+        case 2: {
             std::cout << "Drone Info Message\n";
             break;
-        case 3:
+        }
+        case 3: {
             std::cout << "Location Message\n";
             break;
-        default:
-            std::cout << "Type not handled: " << type << "\n";
+        }
+        default: {
+            std::cout << "FUCK: " << type << "\n";
             break;
+        }
     }
-    if (AssociateMessage *m = dynamic_cast<AssociateMessage*>(message)) {
-        std::cout << m->getDroneId() << "\n";
-    } else if (DroneInfoMessage *m = dynamic_cast<DroneInfoMessage*>(message)) {
-        std::cout << m->getX() << "\n";
-    }
-    // TODO: - Process message information
     delete message;
 }
 

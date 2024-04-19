@@ -94,7 +94,7 @@ void AssociateMessage::parseResponse(RedisResponse* response) {
 }
 
 std::string AssociateMessage::parseMessage() {
-    return "type 1 droneId " + std::to_string(this->droneId);
+    return "type " + std::to_string(this->type) + " droneId " + std::to_string(this->droneId);
 }
 
 int AssociateMessage::getDroneId() {
@@ -127,7 +127,7 @@ void DroneInfoMessage::parseResponse(RedisResponse* response) {
 }
 
 std::string DroneInfoMessage::parseMessage() {
-    return "type 2 droneId " + std::to_string(this->droneId);
+    return "type " + std::to_string(this->type) + " droneId " + std::to_string(this->droneId);
 }
 
 int DroneInfoMessage::getDroneId() {
@@ -160,7 +160,7 @@ void LocationMessage::parseResponse(RedisResponse* response) {
 }
 
 std::string LocationMessage::parseMessage() {
-    return "type 3 x " + std::to_string(this->x) + " y " + std::to_string(this->y);
+    return "type " + std::to_string(this->type) + " x " + std::to_string(this->x) + " y " + std::to_string(this->y);
 }
 
 int LocationMessage::getX() {
