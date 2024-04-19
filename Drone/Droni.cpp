@@ -5,18 +5,26 @@
 #include <cstdlib>
 #include <thread>
 #include <vector>
+#include <sys/time.h>
 
+int Droni::timeID(){
+    struct timeval currentTime;
+    gettimeofday(&currentTime, NULL);
 
-Droni::Droni(int id, int X, int Y, droniState stato, int batteria)
+    long milliseconds = currentTime.tv_sec * 1000 + currentTime.tv_usec / 1000;
+    return milliseconds;
+}
+
+Droni::Droni()
 {   
-    ID = id;
+    ID = timeID();
     MaxPwr = 100;
-    Vel = 0; // i droni partono tutti dalla base ?! ma di sicuro partano da fermi 
+    Vel = 0;  
     RoA = 6;
-    Bat = batteria; //come simulare la batteria che si esauruisce la batteria ? ldopo ogni movimento
-    PosX = X;
-    PosY = Y;
-    Stt = stato;
+    Bat = 100;
+    PosX = 0;
+    PosY = 0;
+    Stt = WAITING;
 }
 
 Droni::~Droni(){
@@ -25,6 +33,13 @@ Droni::~Droni(){
 }
 
 void Droni::Start(){
+
+    this->channel->connect();
+    AssociateMessage *MessageNewID = new AssociateMessage (0 , ID);
+    this->channel->sendMessageTo(0 , *MessageNewID);
+
+    
+
     // controlla se il canale si è conesso bene 
     if (!this->channel->isConnected()) {
         std::cout << "Can't start tower without a connected channel!\n";
@@ -32,6 +47,8 @@ void Droni::Start(){
     }
     
     std::vector<std::thread> threads;
+
+    
 
     this->running = true;
     while (this->running) {
@@ -83,7 +100,6 @@ void Droni::connect(std::string ip, int port) {
         std::cout << "Can't create channel for Droni\n";
     }
 }
-
 
 int Droni::SetID(int id){
     if (id == 0) {

@@ -2,9 +2,9 @@
 # Compiler and Flags
 CC = gcc
 CCFLAGS = -O2 -Iutils
-LIBS = -lstdc++ -lpqxx -lpq
+LIBS = -lstdc++ #-lpqxx -lpq
 TOWER_FILES = tower/main.cpp tower/tower.cpp
-DRONE_FILES = drone/main.cpp drone/drone.cpp
+DRONE_FILES = Drone/main.cpp Drone/Droni.cpp
 REDIS_FILES = utils/redis.cpp utils/channel.cpp
 POSTGRESQL_FILES = utils/postgresql.cpp
 

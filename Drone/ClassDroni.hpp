@@ -28,7 +28,7 @@ private:
     int ID;
     
 public:
-    Droni(int id, int X, int Y, droniState stato, int batteria);
+    Droni();
     ~Droni();
 
     //Set
@@ -53,5 +53,6 @@ public:
     void Accelerazione(int vel);
 private:
     Channel* channel;
-    static bool running;
+    bool running;
+    int timeID();
 };
