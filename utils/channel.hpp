@@ -12,6 +12,9 @@ class Message {
         virtual std::string parseMessage() = 0;
         int getMessageId();
         int getChannelId();
+        int getType();
+    protected:
+        int type;
     private:
         int messageId;
         int channelId;
@@ -45,6 +48,7 @@ class DroneInfoMessage : public Message {
         void parseResponse(RedisResponse*);
         std::string parseMessage();
         int getDroneId();
+        int getX() {return 0;};
     private:
         // TODO: - Fill Fields
         int droneId;

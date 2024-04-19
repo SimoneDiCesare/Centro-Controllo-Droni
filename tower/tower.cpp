@@ -9,12 +9,14 @@
 bool Tower::running = false;
 
 Tower::Tower() {
-    
+    this->channel = nullptr;
 }
 
 Tower::~Tower() {
     running = false;
-    delete this->channel;
+    if (this->channel != nullptr) {
+        delete this->channel;
+    }
 }
 
 void Tower::connect(std::string ip, int port) {
@@ -22,6 +24,8 @@ void Tower::connect(std::string ip, int port) {
     bool connected = this->channel->connect(ip, port);
     if (!connected) {
         std::cout << "Can't create channel for tower\n";
+    } else {
+        std::cout << "Tower connected to redis on channel: 0\n";
     }
 }
 
@@ -35,6 +39,7 @@ void Tower::start() {
     signal(SIGTERM, Tower::handleSignal);
     this->running = true;
     std::vector<std::thread> threads;
+    std::cout << "Starting\n";
     while (this->running) {
         Message *message = this->channel->awaitMessage();
         // TODO: - Implement Multithreading for requests
@@ -66,8 +71,30 @@ void Tower::handleMessage(Message* message) {
     if (message == NULL) {
         return;
     }
+    int type = message->getType();
+    switch (type) {
+        case 0:
+            std::cout << "Ping Message\n";
+            break;
+        case 1:
+            std::cout << "Associate Message\n";
+            break;
+        case 2:
+            std::cout << "Drone Info Message\n";
+            break;
+        case 3:
+            std::cout << "Location Message\n";
+            break;
+        default:
+            std::cout << "Type not handled: " << type << "\n";
+            break;
+    }
+    if (AssociateMessage *m = dynamic_cast<AssociateMessage*>(message)) {
+        std::cout << m->getDroneId() << "\n";
+    } else if (DroneInfoMessage *m = dynamic_cast<DroneInfoMessage*>(message)) {
+        std::cout << m->getX() << "\n";
+    }
     // TODO: - Process message information
-    std::cout << message->getMessageId() << "\n";
     delete message;
 }
 

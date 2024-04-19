@@ -34,14 +34,18 @@ int Message::getChannelId() {
     return this->channelId;
 }
 
+int Message::getType() {
+    return this->type;
+}
+
 // Ping Message
 
 PingMessage::PingMessage(std::string id) : Message(id) {
-
+    this->type = 0;
 }
 
 PingMessage::PingMessage(int messageId) : Message(messageId) {
-
+    this->type = 0;
 }
 
 void PingMessage::parseResponse(RedisResponse *response) {
@@ -62,17 +66,19 @@ void PingMessage::parseResponse(RedisResponse *response) {
 }
 
 std::string PingMessage::parseMessage() {
-    return "type 0";
+    return "type " + std::to_string(this->type);
 }
 
 // AssociateMessage
 
 AssociateMessage::AssociateMessage(std::string id, int droneId) : Message(id) {
     this->droneId = droneId;
+    this->type = 1;
 }
 
 AssociateMessage::AssociateMessage(int messageId, int droneId) : Message(messageId) {
     this->droneId = droneId;
+    this->type = 1;
 } 
 
 void AssociateMessage::parseResponse(RedisResponse* response) {
@@ -100,10 +106,12 @@ int AssociateMessage::getDroneId() {
 
 DroneInfoMessage::DroneInfoMessage(std::string id, int droneId) : Message(id) {
     this->droneId = droneId;
+    this->type = 2;
 }
 
 DroneInfoMessage::DroneInfoMessage(int messageId, int droneId) : Message(messageId) {
     this->droneId = droneId;
+    this->type = 2;
 } 
 
 void DroneInfoMessage::parseResponse(RedisResponse* response) {
@@ -129,11 +137,11 @@ int DroneInfoMessage::getDroneId() {
 // Location Message Class
 
 LocationMessage::LocationMessage(std::string id) : Message(id) {
-    
+    this->type = 3;
 }
 
 LocationMessage::LocationMessage(int messageId) : Message(messageId) {
-    
+    this->type = 3;
 }
 
 void LocationMessage::parseResponse(RedisResponse* response) {
@@ -167,6 +175,7 @@ int LocationMessage::getY() {
 
 Channel::Channel(int id) {
     this->id = id;
+    this->redis = nullptr;
 }
 
 Channel::~Channel() {
@@ -174,7 +183,7 @@ Channel::~Channel() {
 }
 
 bool Channel::connect(std::string ip /*= "127.0.0.1"*/, int port /*= 6379*/) {
-    if (this->redis == NULL) {
+    if (this->redis == nullptr) {
         this->redis = new Redis();
     }
     if (this->redis->isConnected()) {
@@ -185,7 +194,7 @@ bool Channel::connect(std::string ip /*= "127.0.0.1"*/, int port /*= 6379*/) {
 }
 
 bool Channel::isConnected() {
-    if (this->redis == NULL) {
+    if (this->redis == nullptr) {
         return false;
     }
     return this->redis->isConnected();

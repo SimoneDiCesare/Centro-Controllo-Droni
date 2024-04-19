@@ -10,10 +10,10 @@ class Tower {
         void start();
         bool isRunning();
     private:
-        Channel* channel;
         void handleMessage(Message* message);
         static bool running;
         static void handleSignal(int signal);
+        Channel* channel;
 };
 
 #endif
