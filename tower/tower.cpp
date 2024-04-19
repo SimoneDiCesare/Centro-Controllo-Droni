@@ -30,7 +30,7 @@ void Tower::start() {
         std::cout << "Can't start tower without a connected channel!\n";
         return;
     }
-    // Redister signals
+    // Register signals
     signal(SIGINT, Tower::handleSignal);
     signal(SIGTERM, Tower::handleSignal);
     this->running = true;

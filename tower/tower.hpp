@@ -8,7 +8,7 @@ class Tower {
         ~Tower();
         void connect(std::string ip, int port);
         void start();
-        void handleSignal(int signal);
+        bool isRunning();
     private:
         Channel* channel;
         void handleMessage(Message* message);
