@@ -7,7 +7,7 @@
 #include <vector>
 
 
-Droni::Droni(int id, int X, int Y, char16_t stato, int batteria)
+Droni::Droni(int id, int X, int Y, droniState stato, int batteria)
 {   
     ID = id;
     MaxPwr = 100;
@@ -30,8 +30,9 @@ void Droni::Start(){
         std::cout << "Can't start tower without a connected channel!\n";
         return;
     }
-    signal(SIGINT, Droni::handleSignal);
-    signal(SIGTERM, Droni::handleSignal);
+    
+    std::vector<std::thread> threads;
+
     this->running = true;
     while (this->running) {
         // Attende un messaggio dal canale della torre
@@ -49,7 +50,7 @@ void Droni::Start(){
             std::cout << "Received Message: m:" << message->getChannelId() << ":" << message->getMessageId() << "\n";
             
             // Crea un nuovo thread per gestire il messaggio
-            threads.emplace_back(&Tower::handleMessage, this, message);
+            threads.emplace_back(&Droni::handleMessage, this, message);
         }
         
         // Rimuove i thread terminati dal vettore di thread
@@ -95,7 +96,7 @@ int Droni::SetID(int id){
     return 0;
 }
 
-void Droni::SetStt(char16_t Stato){
+void Droni::SetStt(droniState Stato){
     Stt = Stato;
 }
 
@@ -111,7 +112,7 @@ int Droni::GetBatteria(){
     return Bat;
 }
 
-char16_t Droni::GetStato(){
+droniState Droni::GetStato(){
     return Stt;
 }
 

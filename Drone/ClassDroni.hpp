@@ -13,12 +13,14 @@
 //[tempo][tipo mersaggio*][chi][a chi(opzionale)][cosa fa]
 //*ex mesaggio errore o di info
 
+enum droniState{WAITING, CHARGING, MONITORING}; 
+
 class Droni
 {
 private:
     int PosX;
     int PosY;
-    char16_t Stt;
+    droniState Stt;
     int MaxPwr;
     int Vel;
     int Bat;
@@ -26,20 +28,21 @@ private:
     int ID;
     
 public:
-    Droni(int X, int Y, char16_t stato, int batteria);
+    Droni(int id, int X, int Y, droniState stato, int batteria);
     ~Droni();
 
     //Set
     int SetID(int id);
-    void SetStt(char16_t Stato); 
+    void SetStt(droniState Stato); 
 
     void Movimento(int X, int Y);
     void Start();
     void connect(std::string ip, int port);
     void handleMessage(Message* message);
+    void handleSignal(int signal);
 
     //Get
-    char16_t GetStato();
+    droniState GetStato();
     int GetBatteria();
     int GetVelocita();
     int GetRaggio();
