@@ -6,7 +6,7 @@ LIBS = -lstdc++
 POSTGRESQL_LIBS = -lpqxx -lpq
 TOWER_FILES = tower/main.cpp tower/tower.cpp
 DRONE_FILES = Drone/main.cpp Drone/Droni.cpp
-REDIS_FILES = utils/redis.cpp utils/channel.cpp
+REDIS_FILES = utils/redis.cpp utils/channel.cpp utils/log.cpp
 POSTGRESQL_FILES = utils/postgresql.cpp
 
 # Targets

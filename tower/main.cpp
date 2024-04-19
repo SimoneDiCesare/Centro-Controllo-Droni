@@ -1,14 +1,15 @@
 #include <iostream>
 #include <string>
 #include "tower.hpp"
+#include "log.hpp"
 
 // TODO: - Argument parsing
 int main(int argc, char* argv[]) {
-    std::cout << "Running with arguments: \n";
+    logVerbose(true);
+    logOpen("test.log");
     for (int i = 0; i < argc; i++) {
-        std::cout << "" << i << ") " << argv[i] << "\n";
+        logInfo("ARGS", std::to_string(i) + ") " + std::string(argv[i]));
     }
-    std::cout << "========================\n";
     Tower tower;
     tower.connect("127.0.0.1", 6379);
     tower.start();

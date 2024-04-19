@@ -305,8 +305,12 @@ Message* Channel::awaitMessage(long timeout) {
                 case 0:
                     m = new PingMessage(messageId);
                     break;
+                case 1:
+                    m = new AssociateMessage(messageId, -1);
+                    break;
                 default:
                     std::cout << "Type not Handled: " << messageType << "\n";
+                    break;
             }
             if (m != NULL) {
                 m->parseResponse(response);

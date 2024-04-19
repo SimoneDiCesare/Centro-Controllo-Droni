@@ -5,6 +5,7 @@
 #include <cstdlib>
 #include <thread>
 #include <vector>
+#include "log.hpp"
 
 bool Tower::running = false;
 
@@ -23,9 +24,9 @@ void Tower::connect(std::string ip, int port) {
     this->channel = new Channel(0);
     bool connected = this->channel->connect(ip, port);
     if (!connected) {
-        std::cout << "Can't create channel for tower\n";
+        logError("Tower", "Can't create channel for tower");
     } else {
-        std::cout << "Tower connected to redis on channel: 0\n";
+        logInfo("Tower", "Tower connected on channel 0");
     }
 }
 
