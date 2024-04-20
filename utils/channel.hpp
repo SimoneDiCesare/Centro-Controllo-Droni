@@ -30,28 +30,28 @@ class PingMessage : public Message {
 
 class AssociateMessage : public Message {
     public:
-        AssociateMessage(std::string id, int droneId);
-        AssociateMessage(int messageId, int droneId);
+        AssociateMessage(std::string id, long long droneId);
+        AssociateMessage(int messageId, long long droneId);
         void parseResponse(RedisResponse*);
         std::string parseMessage();
-        int getDroneId();
+        long long getDroneId();
     private:
-        int droneId;
+        long long droneId;
 };
 
 // TODO: - Define in channel.cpp
 
 class DroneInfoMessage : public Message {
     public:
-        DroneInfoMessage(std::string id, int droneId);
-        DroneInfoMessage(int messageId, int droneId);
+        DroneInfoMessage(std::string id, long long droneId);
+        DroneInfoMessage(int messageId, long long droneId);
         void parseResponse(RedisResponse*);
         std::string parseMessage();
-        int getDroneId();
+        long long getDroneId();
         int getX() {return 0;};
     private:
         // TODO: - Fill Fields
-        int droneId;
+        long long droneId;
 };
 
 class LocationMessage : public Message {
@@ -69,16 +69,16 @@ class LocationMessage : public Message {
 
 class RetireMessage : public Message {
     public:
-        RetireMessage(std::string id, int droneId);
-        RetireMessage(int messageId, int droneId);
+        RetireMessage(std::string id, long long droneId);
+        RetireMessage(int messageId, long long droneId);
         void parseResponse(RedisResponse*);
         std::string parseMessage();
 };
 
 class DisconnectMessage: public Message {
     public:
-        DisconnectMessage(std::string id, int droneId);
-        DisconnectMessage(int messageId, int droneId);
+        DisconnectMessage(std::string id, long long droneId);
+        DisconnectMessage(int messageId, long long droneId);
         void parseResponse(RedisResponse*);
         std::string parseMessage();
         bool getStatus();
@@ -93,7 +93,8 @@ class Channel {
         bool connect(std::string ip = "127.0.0.1", int port = 6379);
         bool sendMessageTo(int channelId, Message& message);
         bool isConnected();
-        Message* awaitMessage(long timeout = -1);
+        Message* awaitMessage();
+        void setTimeout(long timeout = -1);
         bool flush();
     private:
         Redis* redis;

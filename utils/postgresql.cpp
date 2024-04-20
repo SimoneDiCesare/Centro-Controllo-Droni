@@ -31,35 +31,36 @@ std::string buildArgs(const PostgreArgs args) {
 Postgre::Postgre(const PostgreArgs args) {
     std::string formattedArgs = buildArgs(args);
     this->conn = new pqxx::connection(formattedArgs);
-    if (!this->conn->is_open()) {
-        std::cout << "Can't connect to postgre\n";
-    } else {
-        std::cout << "Connected to db\n";
-    }
+    // if (!this->conn->is_open()) {
+    //     std::cout << "Can't connect to postgre\n";
+    // } else {
+    //     std::cout << "Connected to db\n";
+    // }
 }
 
 Postgre::~Postgre() {
     if (this->isConnected()) {
         this->conn->close();
-        std::cout << "Disconnected\n";
     }
 }
 
-std::tuple<bool, pqxx::result> Postgre::execute(std::string query) {
+PostgreResult Postgre::execute(std::string query) {
+    PostgreResult r;
     try {
         pqxx::work txn(*(this->conn));
-        pqxx::result result = txn.exec(query);
+        r.result = txn.exec(query);
         txn.commit();
-        return std::make_tuple(true, result);
     } catch (std::exception& e) {
-        std::cout << "ERROR: " << e.what() << "\n";
-        return std::make_tuple(false,pqxx::result());
+        r.result = pqxx::result();
+        r.error = true;
+        r.errorMessage = e.what();
     }
+    return r;
 }
 
 bool Postgre::truncateTable(std::string tableName) {
-    auto [success, _] = this->execute("TRUNCATE TABLE " + tableName);
-    return success;
+    auto result = this->execute("TRUNCATE TABLE " + tableName);
+    return result.error;
 }
 
 bool Postgre::isConnected() {

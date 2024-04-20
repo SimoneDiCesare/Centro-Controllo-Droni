@@ -71,12 +71,12 @@ std::string PingMessage::parseMessage() {
 
 // AssociateMessage
 
-AssociateMessage::AssociateMessage(std::string id, int droneId) : Message(id) {
+AssociateMessage::AssociateMessage(std::string id, long long droneId) : Message(id) {
     this->droneId = droneId;
     this->type = 1;
 }
 
-AssociateMessage::AssociateMessage(int messageId, int droneId) : Message(messageId) {
+AssociateMessage::AssociateMessage(int messageId, long long droneId) : Message(messageId) {
     this->droneId = droneId;
     this->type = 1;
 } 
@@ -87,7 +87,7 @@ void AssociateMessage::parseResponse(RedisResponse* response) {
         for (int i = 0; i < data.size(); i++) {
             std::string value = data[i];
             if (value.compare("droneId") == 0) {
-                this->droneId = std::stoi(data[i + 1]);
+                this->droneId = std::stoll(data[i + 1]);
             }
         }
     }
@@ -97,19 +97,19 @@ std::string AssociateMessage::parseMessage() {
     return "type " + std::to_string(this->type) + " droneId " + std::to_string(this->droneId);
 }
 
-int AssociateMessage::getDroneId() {
+long long AssociateMessage::getDroneId() {
     return this->droneId;
 }
 
 // Drone Info Message Class
 // TODO: Add all drone infos
 
-DroneInfoMessage::DroneInfoMessage(std::string id, int droneId) : Message(id) {
+DroneInfoMessage::DroneInfoMessage(std::string id, long long droneId) : Message(id) {
     this->droneId = droneId;
     this->type = 2;
 }
 
-DroneInfoMessage::DroneInfoMessage(int messageId, int droneId) : Message(messageId) {
+DroneInfoMessage::DroneInfoMessage(int messageId, long long droneId) : Message(messageId) {
     this->droneId = droneId;
     this->type = 2;
 } 
@@ -120,7 +120,7 @@ void DroneInfoMessage::parseResponse(RedisResponse* response) {
         for (int i = 0; i < data.size(); i++) {
             std::string value = data[i];
             if (value.compare("droneId") == 0) {
-                this->droneId = std::stoi(data[i + 1]);
+                this->droneId = std::stoll(data[i + 1]);
             }
         }
     }
@@ -130,7 +130,7 @@ std::string DroneInfoMessage::parseMessage() {
     return "type " + std::to_string(this->type) + " droneId " + std::to_string(this->droneId);
 }
 
-int DroneInfoMessage::getDroneId() {
+long long DroneInfoMessage::getDroneId() {
     return this->droneId;
 }
 
@@ -235,13 +235,16 @@ bool Channel::sendMessageTo(int channelId, Message& message) {
     return true;
 }
 
-Message* Channel::awaitMessage(long timeout) {
+void Channel::setTimeout(long timeout) {
     if (timeout != -1) {
         bool succes = this->redis->setTimeout(timeout);
         if (!succes) {
             std::cout << "Can't set timeout\nRunning until a message is received\n";
         }
     }
+}
+
+Message* Channel::awaitMessage() {
     std::string channelId = "c:" + std::to_string(this->id);
     RedisResponse *response = this->redis->sendCommand("LLEN " + channelId);
     if (response->hasError()) {
@@ -251,7 +254,7 @@ Message* Channel::awaitMessage(long timeout) {
             std::cout << "Error reading channel queue:\n\t" << response->getError() << "\n";
         }
         delete response;
-        return NULL;
+        return nullptr;
     } else {
         int queueLength = std::stoi(response->getContent());
         // std::cout << "Messages in queue: " << queueLength << "\n";
@@ -260,45 +263,45 @@ Message* Channel::awaitMessage(long timeout) {
             response = this->redis->sendCommand("RPOP " + channelId);
             if (response->hasError()) {
                 if (response->getType() == NONE) {
-                    std::cout << "Timeout\n";
+                    std::cout << "Timeout on RPOP\n";
                 } else {
                     std::cout << "Error reading channel queue:\n\t" << response->getError() << "\n";    
                 }
                 delete response;
-                return NULL;
+                return nullptr;
             }
             std::string messageId = response->getContent();
             delete response;
             response = this->redis->sendCommand("HGET " + messageId + " type");
             if (response->hasError()) {
                 if (response->getType() == NONE) {
-                    std::cout << "Timeout\n";
+                    std::cout << "Timeout on HGET\n";
                 } else {
                     std::cout << "Error reading message:\n\t" << response->getError() << "\n";    
                 }
                 delete response;
-                return NULL;
+                return nullptr;
             }
             if (response->getContent().compare("null") == 0) {
                 std::cout << "Malformatted Message " << messageId << ": null type";
                 delete response;
-                return NULL;
+                return nullptr;
             }
             int messageType = std::stoi(response->getContent());
             delete response;
             response = this->redis->sendCommand("HGETALL " + messageId);
             if (response->hasError()) {
                 if (response->getType() == NONE) {
-                    std::cout << "Timeout\n";
+                    std::cout << "Timeout on HGETALL\n";
                 } else {
                     std::cout << "Error reading message:\n\t" << response->getError() << "\n";    
                 }
                 delete response;
-                return NULL;
+                return nullptr;
             }
             // Convert in the format channelId:messageId
             messageId = messageId.substr(2, messageId.length());
-            Message *m = NULL;
+            Message *m = nullptr;
             // TODO: - add message types here
             //       - delete message from redis
             switch(messageType) {
@@ -320,7 +323,7 @@ Message* Channel::awaitMessage(long timeout) {
         }
     }
     delete response;
-    return NULL;
+    return nullptr;
 }
 
 bool Channel::flush() {

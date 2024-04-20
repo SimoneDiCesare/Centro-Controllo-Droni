@@ -8,10 +8,5 @@ int main() {
     logInfo("TOWER", "Hello World");
     verbose = true;
     logInfo("DRONE 1", "Hello World");
-    // struct PostgreArgs args;
-    // Postgre p(args);
-    // auto [success,  result] = p.execute("TRUNCATE TABLE drone");
-    // std::cout << success << " - " << result.empty() << "\n";
-    // std::cout << p.truncateTable("drone") << "\n";
-    // return 0;
+    return 0;
 }

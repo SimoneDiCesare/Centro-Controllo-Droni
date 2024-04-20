@@ -1,7 +1,7 @@
 # TODO: Check drone files and target
 # Compiler and Flags
 CC = gcc
-CCFLAGS = -O2 -Iutils
+CCFLAGS = -g -O2 -Iutils
 LIBS = -lstdc++
 POSTGRESQL_LIBS = -lpqxx -lpq
 TOWER_FILES = tower/main.cpp tower/tower.cpp
@@ -19,7 +19,7 @@ $(shell mkdir -p bin)
 
 # Tower Executable
 tower: $(TOWER_FILES) $(REDIS_FILES)
-	$(CC) $(CCFLAGS) $(TOWER_FILES) $(REDIS_FILES) -o bin/tower $(LIBS) $(POSTGRESQL_LIBS)
+	$(CC) $(CCFLAGS) $(TOWER_FILES) $(REDIS_FILES) $(POSTGRESQL_FILES) -o bin/tower $(LIBS) $(POSTGRESQL_LIBS)
 
 # Drone Executable
 drone: $(DRONE_FILES) $(REDIS_FILES)

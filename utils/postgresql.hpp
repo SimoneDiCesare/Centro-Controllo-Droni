@@ -12,11 +12,17 @@ struct PostgreArgs {
     std::string password;
 };
 
+typedef struct PostgreResult {
+    bool error;
+    std::string errorMessage;
+    pqxx::result result;
+} PostgreResult;
+
 class Postgre {
     public:
         Postgre(const PostgreArgs args);
         ~Postgre();
-        std::tuple<bool, pqxx::result> execute(std::string query);
+        PostgreResult execute(std::string query);
         bool truncateTable(std::string tableName);
         bool isConnected();
     private:

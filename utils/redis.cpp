@@ -1,3 +1,4 @@
+#include "redis.hpp"
 #include <netdb.h>
 #include <netinet/tcp.h>
 #include <sys/socket.h>
@@ -7,7 +8,7 @@
 #include <arpa/inet.h>
 #include <iostream>
 #include <vector>
-#include "redis.hpp"
+#include <mutex>
 
 /** Redis Response Class
  * It defines a class that wraps a redis response.
@@ -182,6 +183,8 @@ bool Redis::connect(std::string host, int port) {
 }
 
 RedisResponse* Redis::sendCommand(std::string command) {
+    // Mutex for socket file descriptor
+    std::lock_guard<std::mutex> lock(fdMutex);
     if (command.at(command.length() - 1) != '\n') {
         command += "\n";
     }
