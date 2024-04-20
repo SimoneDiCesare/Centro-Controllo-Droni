@@ -34,4 +34,5 @@
 # Compiled Dirs
 /bin
 pass.txt
+*.log
 /.vscode
