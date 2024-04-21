@@ -213,6 +213,25 @@ bool Channel::hasMessage(long long messageId) {
     return false;
 }
 
+bool Channel::removeMessage(Message *message) {
+    if (!this->redis->isConnected()) {
+        std::cout << "Channel not connected!\n";
+        return false;
+    }
+    std::string key = "m:" + std::to_string(message->getChannelId()) + ":" + std::to_string(message->getMessageId());
+    RedisResponse *response = this->redis->sendCommand("DEL " + key);
+    if (response->hasError()) {
+        if (response->getType() == NONE) {
+            std::cout << "Timeout\n";
+            return false;
+        } else {
+            std::cout << "Error checking message:\n\t" << response->getError() << "\n";
+            return false;
+        }
+    }
+    return true;
+}
+
 bool Channel::sendMessageTo(int channelId, Message& message) {
     if (!this->redis->isConnected()) {
         std::cout << "Channel not connected!\n";
@@ -259,84 +278,64 @@ void Channel::setTimeout(long timeout) {
 
 Message* Channel::awaitMessage() {
     std::string channelId = "c:" + std::to_string(this->id);
-    RedisResponse *response = this->redis->sendCommand("LLEN " + channelId);
+    RedisResponse *response = this->redis->sendCommand("RPOP " + channelId);
     if (response->hasError()) {
         if (response->getType() == NONE) {
-            std::cout << "Timeout\n";
+            std::cout << "Timeout on RPOP\n";
         } else {
-            std::cout << "Error reading channel queue:\n\t" << response->getError() << "\n";
+            std::cout << "Error reading channel queue:\n\t" << response->getError() << "\n";    
         }
         delete response;
         return nullptr;
-    } else {
-        int queueLength = std::stoi(response->getContent());
-        // std::cout << "Messages in queue: " << queueLength << "\n";
-        if (queueLength > 0) {
-            delete response;
-            response = this->redis->sendCommand("RPOP " + channelId);
-            if (response->hasError()) {
-                if (response->getType() == NONE) {
-                    std::cout << "Timeout on RPOP\n";
-                } else {
-                    std::cout << "Error reading channel queue:\n\t" << response->getError() << "\n";    
-                }
-                delete response;
-                return nullptr;
-            }
-            std::string messageId = response->getContent();
-            delete response;
-            response = this->redis->sendCommand("HGET " + messageId + " type");
-            if (response->hasError()) {
-                if (response->getType() == NONE) {
-                    std::cout << "Timeout on HGET\n";
-                } else {
-                    std::cout << "Error reading message:\n\t" << response->getError() << "\n";    
-                }
-                delete response;
-                return nullptr;
-            }
-            if (response->getContent().compare("null") == 0) {
-                std::cout << "Malformatted Message " << messageId << ": null type";
-                delete response;
-                return nullptr;
-            }
-            int messageType = std::stoi(response->getContent());
-            delete response;
-            response = this->redis->sendCommand("HGETALL " + messageId);
-            if (response->hasError()) {
-                if (response->getType() == NONE) {
-                    std::cout << "Timeout on HGETALL\n";
-                } else {
-                    std::cout << "Error reading message:\n\t" << response->getError() << "\n";    
-                }
-                delete response;
-                return nullptr;
-            }
-            // Convert in the format channelId:messageId
-            messageId = messageId.substr(2, messageId.length());
-            Message *m = nullptr;
-            // TODO: - add message types here
-            //       - delete message from redis
-            switch(messageType) {
-                case 0:
-                    m = new PingMessage(messageId);
-                    break;
-                case 1:
-                    m = new AssociateMessage(messageId, -1);
-                    break;
-                default:
-                    std::cout << "Type not Handled: " << messageType << "\n";
-                    break;
-            }
-            if (m != NULL) {
-                m->parseResponse(response);
-            }
-            delete response;
-            return m;
+    }
+    // Check if queue is empty
+    if (response->getType() == NLL) {
+        delete response;
+        return nullptr;
+    }
+    std::string messageId = response->getContent(); 
+    delete response;
+    response = this->redis->sendCommand("HGETALL " + messageId);
+    if (response->hasError()) {
+        if (response->getType() == NONE) {
+            std::cout << "Timeout on HGETALL\n";
+        } else {
+            std::cout << "Error reading message:\n\t" << response->getError() << "\n";
+        }
+        delete response;
+        return nullptr;
+    }
+    // Convert in the format channelId:messageId
+    messageId = messageId.substr(2, messageId.length());
+    int messageType = -1;
+    Message *m = nullptr;
+    std::vector<std::string> params = response->getVectorContent();
+    for (int i = 0; i < params.size(); i++) {
+        if (params[i].compare("type") == 0 && i < params.size() - 1) {
+            messageType = std::stoi(params[i + 1]);
+            break;
         }
     }
+    if (messageType == -1) {
+        // std::cout << "Can't analyze message without a type!\n";
+        delete response;
+        return nullptr;
+    }
+    switch(messageType) {
+        case 0:
+            m = new PingMessage(messageId);
+            break;
+        case 1:
+            m = new AssociateMessage(messageId, -1);
+            break;
+        default:
+            std::cout << "Unhandled type: " << messageType << "\n";
+    }
+    if (m != nullptr) {
+        m->parseResponse(response);
+    }
     delete response;
-    return nullptr;
+    return m;
 }
 
 bool Channel::flush() {

@@ -17,6 +17,18 @@ long long nanos() {
     return currentNanoseconds;
 }
 
+long long Tower::generateMessageId() {
+    long long messageId = nanos();
+    while (true) {
+        if (this->channel->hasMessage(messageId)) {
+            messageId += 1;
+        } else {
+            break;
+        }
+    }
+    return messageId;
+}
+
 // Utility for faster logs
 
 void loge(std::string message) {
@@ -141,6 +153,12 @@ long long checkDroneId(Postgre* db, long long id) {
     return result.result.empty()? id : checkDroneId(db, id + 1);
 }
 
+void Tower::handlePing(PingMessage *message) {
+    long long id = message->getChannelId();
+    PingMessage *ping = new PingMessage(generateMessageId());
+    this->channel->sendMessageTo(id, *ping);
+}
+
 void Tower::handleAssociation(AssociateMessage *message) {
     long long id = message->getDroneId();
     long long validId = checkDroneId(db, id);
@@ -149,14 +167,7 @@ void Tower::handleAssociation(AssociateMessage *message) {
     if (result.error) {
         loge(result.errorMessage);
     }
-    long long messageId = nanos();
-    while (true) {
-        if (this->channel->hasMessage(messageId)) {
-            messageId += 1;
-        } else {
-            break;
-        }
-    }
+    long long messageId = generateMessageId();
     AssociateMessage *m = new AssociateMessage(messageId, validId);
     this->channel->sendMessageTo(id, *m);
 }
@@ -168,7 +179,7 @@ void Tower::handleMessage(Message* message) {
     int type = message->getType();
     switch (type) {
         case 0: {
-            std::cout << "Ping Message\n";
+            this->handlePing(dynamic_cast<PingMessage*>(message));
             break;
         }
         case 1: {
@@ -184,9 +195,17 @@ void Tower::handleMessage(Message* message) {
             break;
         }
         default: {
-            std::cout << "FUCK: " << type << "\n";
+            loge("Invalid message type received: " + std::to_string(type));
             break;
         }
+    }
+    // Clear message on channel
+    bool deleted = this->channel->removeMessage(message);
+    std::string messageId = std::to_string(message->getChannelId()) + ":" + std::to_string(message->getMessageId());
+    if (!deleted) {
+        loge("Can't delete message " + messageId + " from redis!");
+    } else {
+        logi("Consumed message " + messageId);
     }
     delete message;
 }

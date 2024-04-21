@@ -98,6 +98,7 @@ class Channel {
         bool connect(std::string ip = "127.0.0.1", int port = 6379);
         bool sendMessageTo(int channelId, Message& message);
         bool hasMessage(long long messageId);
+        bool removeMessage(Message *message);
         bool isConnected();
         Message* awaitMessage();
         void setTimeout(long timeout = -1);

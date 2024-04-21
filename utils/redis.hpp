@@ -32,7 +32,8 @@ enum RedisResponseType {
     STRING,
     ERROR,
     INTEGER,
-    VECTOR
+    VECTOR,
+    NLL
 };
 
 class RedisResponse {

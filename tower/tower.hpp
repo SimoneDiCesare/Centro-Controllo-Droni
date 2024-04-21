@@ -15,7 +15,9 @@ class Tower {
         void handleMessage(Message* message);
         static bool running;
         static void handleSignal(int signal);
+        long long generateMessageId();
         // Handle functions
+        void handlePing(PingMessage *message);
         void handleAssociation(AssociateMessage*);
         // Params
         Channel* channel;

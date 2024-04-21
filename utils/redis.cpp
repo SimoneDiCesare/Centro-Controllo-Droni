@@ -77,6 +77,7 @@ void RedisResponse::setContent(std::string content) {
             // Check empty string -> null result from redis
             if (content.at(0) == '-' && content.at(1) == '1') {
                 this->content = "null";
+                this->type = NLL;
                 break;
             }
             std::size_t delimiter = content.find("\r\n");
