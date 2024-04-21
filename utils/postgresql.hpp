@@ -23,7 +23,6 @@ class Postgre {
         Postgre(const PostgreArgs args);
         ~Postgre();
         PostgreResult execute(std::string query);
-        bool truncateTable(std::string tableName);
         bool isConnected();
     private:
         pqxx::connection *conn;

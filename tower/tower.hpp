@@ -20,7 +20,6 @@ class Tower {
         // Params
         Channel* channel;
         Postgre* db;
-        int messageCount;
 };
 
 #endif

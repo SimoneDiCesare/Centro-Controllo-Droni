@@ -22,7 +22,7 @@ std::string buildArgs(const PostgreArgs args) {
     }
     formattedArgs += " hostaddr=" + args.ip;
     formattedArgs += " port=" + std::to_string(args.port);
-    std::cout << formattedArgs << "\n";
+    // std::cout << formattedArgs << "\n";
     return formattedArgs;
 }
 
@@ -49,6 +49,7 @@ PostgreResult Postgre::execute(std::string query) {
     try {
         pqxx::work txn(*(this->conn));
         r.result = txn.exec(query);
+        r.error = false;
         txn.commit();
     } catch (std::exception& e) {
         r.result = pqxx::result();
@@ -56,11 +57,6 @@ PostgreResult Postgre::execute(std::string query) {
         r.errorMessage = e.what();
     }
     return r;
-}
-
-bool Postgre::truncateTable(std::string tableName) {
-    auto result = this->execute("TRUNCATE TABLE " + tableName);
-    return result.error;
 }
 
 bool Postgre::isConnected() {

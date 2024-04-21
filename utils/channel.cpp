@@ -17,7 +17,7 @@ Message::Message(std::string id) {
     }
 }
 
-Message::Message(int messageId) {
+Message::Message(long long messageId) {
     this->messageId = messageId;
     this->channelId = -1;
 }
@@ -26,7 +26,7 @@ Message::~Message() {
 
 }
 
-int Message::getMessageId() {
+long long Message::getMessageId() {
     return this->messageId;
 }
 
@@ -44,7 +44,7 @@ PingMessage::PingMessage(std::string id) : Message(id) {
     this->type = 0;
 }
 
-PingMessage::PingMessage(int messageId) : Message(messageId) {
+PingMessage::PingMessage(long long messageId) : Message(messageId) {
     this->type = 0;
 }
 
@@ -76,7 +76,7 @@ AssociateMessage::AssociateMessage(std::string id, long long droneId) : Message(
     this->type = 1;
 }
 
-AssociateMessage::AssociateMessage(int messageId, long long droneId) : Message(messageId) {
+AssociateMessage::AssociateMessage(long long messageId, long long droneId) : Message(messageId) {
     this->droneId = droneId;
     this->type = 1;
 } 
@@ -109,7 +109,7 @@ DroneInfoMessage::DroneInfoMessage(std::string id, long long droneId) : Message(
     this->type = 2;
 }
 
-DroneInfoMessage::DroneInfoMessage(int messageId, long long droneId) : Message(messageId) {
+DroneInfoMessage::DroneInfoMessage(long long messageId, long long droneId) : Message(messageId) {
     this->droneId = droneId;
     this->type = 2;
 } 
@@ -140,7 +140,7 @@ LocationMessage::LocationMessage(std::string id) : Message(id) {
     this->type = 3;
 }
 
-LocationMessage::LocationMessage(int messageId) : Message(messageId) {
+LocationMessage::LocationMessage(long long messageId) : Message(messageId) {
     this->type = 3;
 }
 
@@ -198,6 +198,27 @@ bool Channel::isConnected() {
         return false;
     }
     return this->redis->isConnected();
+}
+
+bool Channel::hasMessage(long long messageId) {
+    if (!this->redis->isConnected()) {
+        std::cout << "Channel not connected!\n";
+        return false;
+    }
+    RedisResponse *response = this->redis->sendCommand("KEYS m:" + std::to_string(this->id) + ":" + std::to_string(messageId));
+    if (response->hasError()) {
+        if (response->getType() == NONE) {
+            std::cout << "Timeout\n";
+            return false;
+        } else {
+            std::cout << "Error checking message:\n\t" << response->getError() << "\n";
+            return false;
+        }
+    }
+    if (response->getType() == VECTOR) {
+        return response->getVectorContent().size() > 0;
+    }
+    return false;
 }
 
 bool Channel::sendMessageTo(int channelId, Message& message) {

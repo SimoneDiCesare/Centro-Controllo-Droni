@@ -8,10 +8,22 @@ int main(int argc, char* argv[]) {
     logVerbose(true);
     logOpen("test.log");
     for (int i = 0; i < argc; i++) {
-        logInfo("ARGS", std::to_string(i) + ") " + std::string(argv[i]));
+        logInfo("Init", std::to_string(i) + ") " + std::string(argv[i]));
     }
+    PostgreArgs args;
+    args.dbname = "towerdb";
+    args.user = "tower";
     Tower tower;
-    tower.connect("127.0.0.1", 6379);
+    bool connected = tower.connectDb(args);
+    if (!connected) {
+        logError("Init", "Can't start process without postgre connection!");
+        return 1;
+    }
+    connected = tower.connect("127.0.0.1", 6379);
+    if (!connected) {
+        logError("Init", "Can't start process without redis connection!");
+        return 1;
+    }
     tower.start();
     return 0;
 }

@@ -8,6 +8,15 @@
 #include <vector>
 #include "log.hpp"
 
+long long nanos() {
+    auto currentTime = std::chrono::high_resolution_clock::now();
+    // Convert the time point to nanoseconds since epoch
+    auto nanoseconds_since_epoch = std::chrono::time_point_cast<std::chrono::nanoseconds>(currentTime).time_since_epoch().count();
+    // Store the nanoseconds in a long long
+    long long currentNanoseconds = nanoseconds_since_epoch;
+    return currentNanoseconds;
+}
+
 // Utility for faster logs
 
 void loge(std::string message) {
@@ -25,7 +34,6 @@ bool Tower::running = false;
 Tower::Tower() {
     this->channel = nullptr;
     this->db = nullptr;
-    this->messageCount = 0;
 }
 
 Tower::~Tower() {
@@ -50,7 +58,8 @@ bool Tower::connectDb(const PostgreArgs args) {
     this->db = new Postgre(args);
     if (this->db->isConnected()) {
         logi("DB Connection Enstablished");
-        auto result = this->db->execute(R"(CREATE TABLE IF NOT EXISTS drone ("
+        int x = 10;
+        PostgreResult result = this->db->execute(R"(CREATE TABLE IF NOT EXISTS drone (
         id BIGINT PRIMARY KEY NOT NULL,
         x INTEGER NOT NULL,
         y INTEGER NOT NULL,
@@ -64,6 +73,13 @@ bool Tower::connectDb(const PostgreArgs args) {
             loge(result.errorMessage);
             return false;
         }
+        logi("Table drone Created");
+        result = this->db->execute("TRUNCATE TABLE drone");
+        if (result.error) {
+            loge(result.errorMessage);
+            return false;
+        }
+        logi("Table drone Cleared");
         return true;
     } else {
         loge("Can't connected to db!");
@@ -82,18 +98,19 @@ void Tower::start() {
     this->running = true;
     std::vector<std::thread> threads;
     logi("Tower online");
+    // Timeout on awaitMessage = 5sec
     this->channel->setTimeout(5);
     while (this->running) {
         Message *message = this->channel->awaitMessage();
-        // TODO: - Implement Multithreading for requests
-        //       - Implement Signals for Terminating Process
-        //       - IMplement Response Logic
         if (message == nullptr) {
-            // std::cout << "No Message Recived\n";
+            // If we have no message to handle, we check last updates from drones
+            // If a last update is > x second (to decide, maybe 1-5' => 60-300'')
         } else {
+            // Handle message received on another thread, and return to listen
             logi("Received message from Drone:" + std::to_string(message->getChannelId()));
             threads.emplace_back(&Tower::handleMessage, this, message);
         }
+        // Free finished threads
         for (auto it = threads.begin(); it != threads.end(); ) {
             if (it->joinable()) {
                 it++;
@@ -111,40 +128,36 @@ void Tower::start() {
     //       - Exit with received signal 
 }
 
-long long generateUniqueId(PostgreResult result, long long id) {
-    if (id == -1) {
-        loge("Too many id where assigned!");
-        return 1;
-    }
-    for (auto const &row: result.result) {
-        for (auto const &field: row) {
-            // Safe type check
-            if (field.as<long long>() == id) {
-                return generateUniqueId(result, id + 1);
-            }
-        }
-    }
-    return id;
-}
-
 long long checkDroneId(Postgre* db, long long id) {
     if (db == nullptr || !db->isConnected()) {
         loge("Can't check drone id validity!");
         return id;
     }
-    PostgreResult result = db->execute("SELECT id FROM drone");
+    PostgreResult result = db->execute("SELECT id FROM drone WHERE id = " + std::to_string(id));
     if (result.error) {
         loge(result.errorMessage);
         return id;
     }
-    return generateUniqueId(result, id);
+    return result.result.empty()? id : checkDroneId(db, id + 1);
 }
 
 void Tower::handleAssociation(AssociateMessage *message) {
     long long id = message->getDroneId();
     long long validId = checkDroneId(db, id);
-    AssociateMessage *m = new AssociateMessage(this->messageCount, validId);
-    this->messageCount++;
+    // Get drones info
+    PostgreResult result = this->db->execute("INSERT INTO drone (id, x, y, battery_autonomy, battery_life, dstate, last_update) VALUES (" + std::to_string(validId) + ", 0, 0, '00:00:00', '00:00:00', 'waiting', CURRENT_TIMESTAMP)");
+    if (result.error) {
+        loge(result.errorMessage);
+    }
+    long long messageId = nanos();
+    while (true) {
+        if (this->channel->hasMessage(messageId)) {
+            messageId += 1;
+        } else {
+            break;
+        }
+    }
+    AssociateMessage *m = new AssociateMessage(messageId, validId);
     this->channel->sendMessageTo(id, *m);
 }
 
@@ -192,4 +205,8 @@ void Tower::handleSignal(int signal) {
             logDebug("Tower", "Signal not handled: " + std::to_string(signal));
             break;
     }
+}
+
+bool Tower::isRunning() {
+    return this->running;
 }
