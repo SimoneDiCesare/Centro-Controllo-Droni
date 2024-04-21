@@ -12,9 +12,7 @@ class Message {
         virtual std::string parseMessage() = 0;
         long long getMessageId();
         int getChannelId();
-        int getType();
-    protected:
-        int type;
+        virtual int getType() {return -1;};
     private:
         long long messageId;
         int channelId;
@@ -26,6 +24,7 @@ class PingMessage : public Message {
         PingMessage(long long messageId);
         void parseResponse(RedisResponse*);
         std::string parseMessage();
+        int getType() {return 0;};
 };
 
 class AssociateMessage : public Message {
@@ -35,6 +34,7 @@ class AssociateMessage : public Message {
         void parseResponse(RedisResponse*);
         std::string parseMessage();
         long long getDroneId();
+        int getType() {return 1;};
     private:
         long long droneId;
 };
@@ -49,6 +49,7 @@ class DroneInfoMessage : public Message {
         std::string parseMessage();
         long long getDroneId();
         int getX() {return 0;};
+        int getType() {return 2;};
     private:
         // TODO: - Fill Fields
         long long droneId;
@@ -62,6 +63,7 @@ class LocationMessage : public Message {
         std::string parseMessage();
         int getX();
         int getY();
+        int getType() {return 3;};
     private:
         int x;
         int y;
@@ -73,6 +75,7 @@ class RetireMessage : public Message {
         RetireMessage(long long messageId, long long droneId);
         void parseResponse(RedisResponse*);
         std::string parseMessage();
+        int getType() {return 4;};
 };
 
 // TODO: - Implementations in cpp

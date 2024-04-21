@@ -104,10 +104,10 @@ void Tower::start() {
         Message *message = this->channel->awaitMessage();
         if (message == nullptr) {
             // If we have no message to handle, we check last updates from drones
-            // If a last update is > x second (to decide, maybe 1-5' => 60-300'')
+            // If a last update is > x second (to decide, maybe 1-5' => 60-300'') -> ping and wait a response
         } else {
             // Handle message received on another thread, and return to listen
-            logi("Received message from Drone:" + std::to_string(message->getChannelId()));
+            logi("Received message from Drone " + std::to_string(message->getChannelId()) + ". Type: " + std::to_string(message->getType()));
             threads.emplace_back(&Tower::handleMessage, this, message);
         }
         // Free finished threads

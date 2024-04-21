@@ -34,18 +34,14 @@ int Message::getChannelId() {
     return this->channelId;
 }
 
-int Message::getType() {
-    return this->type;
-}
-
 // Ping Message
 
 PingMessage::PingMessage(std::string id) : Message(id) {
-    this->type = 0;
+    
 }
 
 PingMessage::PingMessage(long long messageId) : Message(messageId) {
-    this->type = 0;
+    
 }
 
 void PingMessage::parseResponse(RedisResponse *response) {
@@ -66,19 +62,17 @@ void PingMessage::parseResponse(RedisResponse *response) {
 }
 
 std::string PingMessage::parseMessage() {
-    return "type " + std::to_string(this->type);
+    return "type " + std::to_string(this->getType());
 }
 
 // AssociateMessage
 
 AssociateMessage::AssociateMessage(std::string id, long long droneId) : Message(id) {
     this->droneId = droneId;
-    this->type = 1;
 }
 
 AssociateMessage::AssociateMessage(long long messageId, long long droneId) : Message(messageId) {
     this->droneId = droneId;
-    this->type = 1;
 } 
 
 void AssociateMessage::parseResponse(RedisResponse* response) {
@@ -94,7 +88,7 @@ void AssociateMessage::parseResponse(RedisResponse* response) {
 }
 
 std::string AssociateMessage::parseMessage() {
-    return "type " + std::to_string(this->type) + " droneId " + std::to_string(this->droneId);
+    return "type " + std::to_string(this->getType()) + " droneId " + std::to_string(this->droneId);
 }
 
 long long AssociateMessage::getDroneId() {
@@ -106,12 +100,10 @@ long long AssociateMessage::getDroneId() {
 
 DroneInfoMessage::DroneInfoMessage(std::string id, long long droneId) : Message(id) {
     this->droneId = droneId;
-    this->type = 2;
 }
 
 DroneInfoMessage::DroneInfoMessage(long long messageId, long long droneId) : Message(messageId) {
     this->droneId = droneId;
-    this->type = 2;
 } 
 
 void DroneInfoMessage::parseResponse(RedisResponse* response) {
@@ -127,7 +119,7 @@ void DroneInfoMessage::parseResponse(RedisResponse* response) {
 }
 
 std::string DroneInfoMessage::parseMessage() {
-    return "type " + std::to_string(this->type) + " droneId " + std::to_string(this->droneId);
+    return "type " + std::to_string(this->getType()) + " droneId " + std::to_string(this->droneId);
 }
 
 long long DroneInfoMessage::getDroneId() {
@@ -137,11 +129,11 @@ long long DroneInfoMessage::getDroneId() {
 // Location Message Class
 
 LocationMessage::LocationMessage(std::string id) : Message(id) {
-    this->type = 3;
+    
 }
 
 LocationMessage::LocationMessage(long long messageId) : Message(messageId) {
-    this->type = 3;
+    
 }
 
 void LocationMessage::parseResponse(RedisResponse* response) {
@@ -160,7 +152,7 @@ void LocationMessage::parseResponse(RedisResponse* response) {
 }
 
 std::string LocationMessage::parseMessage() {
-    return "type " + std::to_string(this->type) + " x " + std::to_string(this->x) + " y " + std::to_string(this->y);
+    return "type " + std::to_string(this->getType()) + " x " + std::to_string(this->x) + " y " + std::to_string(this->y);
 }
 
 int LocationMessage::getX() {
