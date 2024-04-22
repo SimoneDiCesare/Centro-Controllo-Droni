@@ -8,17 +8,14 @@
 #include <vector>
 #include "log.hpp"
 #include "time.hpp"
+#include <mutex>
 
 long long Tower::generateMessageId() {
-    long long messageId = Time::nanos();
-    while (true) {
-        if (this->channel->hasMessage(messageId)) {
-            messageId += 1;
-        } else {
-            break;
-        }
-    }
-    return messageId;
+    this->messageCounterLock.lock();
+    long long id = this->messageCounter;
+    this->messageCounter++;
+    this->messageCounterLock.unlock();
+    return id;
 }
 
 // Utility for faster logs
@@ -35,9 +32,10 @@ void logi(std::string message) {
 
 bool Tower::running = false;
 
-Tower::Tower() {
+Tower::Tower() : messageCounterLock() {
     this->channel = nullptr;
     this->db = nullptr;
+    this->messageCounter = 0;
 }
 
 Tower::~Tower() {
@@ -47,7 +45,7 @@ Tower::~Tower() {
     }
 }
 
-bool Tower::connect(std::string ip, int port) {
+bool Tower::connectChannel(std::string ip, int port) {
     this->channel = new Channel(0);
     bool connected = this->channel->connect(ip, port);
     if (connected) {
@@ -92,7 +90,7 @@ bool Tower::connectDb(const PostgreArgs args) {
 }
 
 void Tower::start() {
-    if (!this->channel->isConnected()) {
+    if (!this->channel->isUp()) {
         loge("Can't start tower without a connected channel!");
         return;
     }
@@ -103,8 +101,8 @@ void Tower::start() {
     std::vector<std::thread> threads;
     logi("Tower online");
     while (this->running) {
-        // 1 seconds of waiting before restarting the cycle => needs max responsitivity
-        Message *message = this->channel->awaitMessage(1);
+        // 20 seconds of waiting before restarting the cycle
+        Message *message = this->channel->awaitMessage(20);
         if (message == nullptr) {
             // If we have no message to handle, we check last updates from drones
             // If a last update is > x second (to decide, maybe 1-5' => 60-300'') -> ping and wait a response
@@ -151,7 +149,7 @@ long long checkDroneId(Postgre* db, long long id) {
 void Tower::handlePing(PingMessage *message) {
     long long id = message->getChannelId();
     PingMessage *ping = new PingMessage(generateMessageId());
-    this->channel->sendMessageTo(id, *ping);
+    this->channel->sendMessageTo(id, ping);
 }
 
 void Tower::handleAssociation(AssociateMessage *message) {
@@ -164,7 +162,7 @@ void Tower::handleAssociation(AssociateMessage *message) {
     }
     long long messageId = generateMessageId();
     AssociateMessage *m = new AssociateMessage(messageId, validId);
-    this->channel->sendMessageTo(id, *m);
+    this->channel->sendMessageTo(id, m);
 }
 
 void Tower::handleInfoMessage(DroneInfoMessage *message) {
@@ -200,11 +198,10 @@ void Tower::handleMessage(Message* message) {
     }
     // Clear message on channel
     bool deleted = this->channel->removeMessage(message);
-    std::string messageId = std::to_string(message->getChannelId()) + ":" + std::to_string(message->getMessageId());
-    if (!deleted) {
-        loge("Can't delete message " + messageId + " from redis!");
+    if (deleted) {
+        logi("Consumed message m:" + message->getFormattedId());
     } else {
-        logi("Consumed message " + messageId);
+        loge("Can't delete message m:" + message->getFormattedId() + " from redis!");
     }
     delete message;
 }

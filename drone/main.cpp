@@ -15,6 +15,8 @@ int main(int argc, char* argv[]){
     if (!connected) {
         logError("Init", "Can't start process without redis connection!");
         return 1;
+    } else {
+        logInfo("Init", "Drone connected on redis with temp id: " + std::to_string(drone.getId()));
     }
     drone.start();
 }

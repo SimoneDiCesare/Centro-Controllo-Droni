@@ -2,6 +2,7 @@
 #define CHANNEL_HPP
 #include "redis.hpp"
 #include <string>
+#include <mutex>
 
 class Message {
     public:
@@ -94,6 +95,41 @@ class DisconnectMessage: public Message {
 
 class Channel {
     public:
+        // Constructor and Destructor
+        Channel(long long id);
+        ~Channel();
+        // Connection Functions
+        bool connect(std::string ip = "127.0.0.1", int port = 6379);
+        bool disconnect();
+        // Writing Operations
+        bool sendMessageTo(long long channelId, Message* message);
+        bool removeMessage(Message *message);
+        bool flush();
+        // Reading Operations
+        Message* readMessage();
+        Message* awaitMessage(long timeout = 0);
+        // Getter
+        long long getId();
+        bool canRead();
+        bool canWrite();
+        bool isUp();
+        // Setter
+        void setId(long long id);
+    private:
+        // Params
+        std::mutex readingLock;
+        std::mutex writingLock;
+        Redis* readingClient;
+        Redis* writingClient;
+        long long id;
+        // Utility Functions
+        RedisResponse* sendWriteCommand(std::string command);
+        RedisResponse* sendReadCommand(std::string command);
+        Message* readMessageWithId(std::string messageId);
+};
+
+/*class Channel {
+    public:
         Channel(long long id);
         ~Channel();
         bool connect(std::string ip = "127.0.0.1", int port = 6379);
@@ -107,6 +143,6 @@ class Channel {
     private:
         Redis* redis;
         long long id;
-};
+};*/
 
 #endif

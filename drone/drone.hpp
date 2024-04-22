@@ -1,5 +1,6 @@
 #include <iostream>
 #include <chrono>
+#include <mutex>
 #include "channel.hpp"
 
 //Coordinate XY -> PosX e PosY
@@ -54,6 +55,8 @@ class Drone {
         // Process params
         Channel *channel;
         bool running;
+        long long messageCounter;
+        std::mutex messageCounterLock;
         // Drone infos
         long long id;
         int posX;
@@ -68,4 +71,5 @@ class Drone {
         void logi(std::string message);
         void loge(std::string message);
         void logd(std::string message);
+        long long generateMessageId();
 };

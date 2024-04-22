@@ -2,12 +2,13 @@
 #define TOWER_HPP
 #include "channel.hpp"
 #include "postgresql.hpp"
+#include <mutex>
 
 class Tower {
     public:
         Tower();
         ~Tower();
-        bool connect(std::string ip, int port);
+        bool connectChannel(std::string ip, int port);
         bool connectDb(const PostgreArgs args);
         void start();
         bool isRunning();
@@ -23,6 +24,8 @@ class Tower {
         // Params
         Channel* channel;
         Postgre* db;
+        long long messageCounter;
+        std::mutex messageCounterLock;
 };
 
 #endif

@@ -2,7 +2,6 @@
 #define REDIS_HPP
 #include <string>
 #include <vector>
-#include <mutex>
 
 /* Comandi Utili:
  * HSET id k1 v1 k2 v2 k3 v3 ... => :n (Numero di campi inseriti)
@@ -67,7 +66,6 @@ class Redis {
     private:
         bool connected;
         int sockFd;
-        std::mutex fdMutex;
 };
 
 #endif

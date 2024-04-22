@@ -30,13 +30,21 @@ long long Drone::createId() {
     return Time::nanos();
 }
 
+long long Drone::generateMessageId() {
+    this->messageCounterLock.lock();
+    long long id = this->messageCounter;
+    this->messageCounter++;
+    this->messageCounterLock.unlock();
+    return id;
+}
+
 // Constructors and Deconstructor
 
 Drone::Drone() : Drone(Drone::createId()){
 
 }
 
-Drone::Drone(long long id){
+Drone::Drone(long long id) : messageCounterLock() {
     this->id = id;
     this->posX = 0;
     this->posY = 0;
@@ -45,6 +53,7 @@ Drone::Drone(long long id){
     this->state = DroneState::WAITING;
     this->channel = nullptr;
     this->running = false;
+    this->messageCounter = 0;
 }
 
 Drone::~Drone() {
@@ -56,33 +65,28 @@ Drone::~Drone() {
 // Drone Functions
 
 bool Drone::connectChannel(std::string ip, int port) {
-    if (this->channel == nullptr) {
-        this->channel = new Channel(this->id);
-    }
-    if (this->channel->isConnected()) {
-        loge("Channel already up!");
-        return false;
-    }
-    bool connected = this->channel->connect();
+    this->channel = new Channel(this->id);
+    bool connected = this->channel->connect(ip, port);
     if (connected) {
-        logi("Drone connected on channel " + std::to_string(this->id));
+        logi("Drone connected on redis channel " + std::to_string(this->id));
     } else {
-        loge("Can't create channel connection!");
+        loge("Can't create channel for drone");
     }
     return connected;
 }
 
 bool Drone::connectToTower() {
-    if (!this->channel->isConnected()) {
+    if (!this->channel->isUp()) {
         loge("Can't start drone without a connection!");
         return false;
     }
     // Setting timeout for redis responses
-    AssociateMessage message(Time::nanos(), this->id);
-    this->channel->sendMessageTo(0, message);
+    AssociateMessage message(this->generateMessageId(), this->id);
+    this->channel->sendMessageTo(0, &message);
     Message *response = this->channel->awaitMessage(10);
     if (response == nullptr) {
         loge("Can't enstablish connection to tower!");
+        delete response;
         return false;
     }
     if (AssociateMessage *association = dynamic_cast<AssociateMessage*>(response)) {
@@ -99,7 +103,6 @@ bool Drone::connectToTower() {
         }  else {
             logi("Can't delete message m:" + association->getFormattedId());
         }
-        delete association;
     }
     delete response;
     // TODO: Send infos to tower
@@ -162,6 +165,35 @@ void Drone::handleMessage(Message *message) {
     }
     logi("Handling message m:" + message->getFormattedId());
     // Message handling logic
+    int type = message->getType();
+    switch (type) {
+        case 0:
+            logi("Ping!");
+            break;
+        case 1:
+            logi("Reassociating Drone");
+            break;
+        case 2: {
+            logi("Drone Info Message");
+            break;
+        }
+        case 3: {
+            logi("Location Message");
+            break;
+        }
+        default: {
+            loge("Unhandled message type: " + std::to_string(type));
+            break;
+        }
+    }
+    // Consume message
+    bool deleted = this->channel->removeMessage(message);
+    if (deleted) {
+        logi("Consumed message m:" + message->getFormattedId());
+    }  else {
+        logi("Can't delete message m:" + message->getFormattedId());
+    }
+    delete message;
 }
 
 // Setter

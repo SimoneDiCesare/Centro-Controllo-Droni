@@ -4,6 +4,43 @@
 #include <string>
 #include <vector>
 
+// utility local functions
+
+bool connectClient(Redis *redis, std::string ip, int port) {
+    if (redis == nullptr) {
+        return false;
+    }
+    if (redis->isConnected()) {
+        return true;
+    }
+    return redis->connect(ip, port);
+}
+
+bool isValidNumber(const std::string& str) {
+    // Skip leading whitespace
+    const char* ptr = str.c_str();
+    while (std::isspace(*ptr)) {
+        ptr++;
+    }
+    // Attempt to convert the remaining string to a long integer
+    char* endptr;
+    std::strtoll(ptr, &endptr, 10);
+    // If endptr is equal to ptr, no valid digits were found
+    // If endptr is not equal to '\0', not all characters were consumed
+    return *ptr != '\0' && *endptr == '\0';
+}
+
+bool isValidMessageId(std::string id) {
+    if (id.at(0) != 'm' || id.at(1) != ':') {
+        return false;
+    }
+    std::size_t delimiter = id.find_last_of(":");
+    bool f1 = isValidNumber(id.substr(1, delimiter));
+    bool f2 = isValidNumber(id.substr(delimiter + 1, id.length()));
+    return f1 & f2;
+}
+
+
 // Abstract Class Message 
 
 Message::Message(std::string id) {
@@ -169,160 +206,160 @@ int LocationMessage::getY() {
 
 // Channel Class
 
-Channel::Channel(long long id) {
+Channel::Channel(long long id) : readingLock(), writingLock() {
     this->id = id;
-    this->redis = nullptr;
+    this->readingClient = nullptr;
+    this->writingClient = nullptr;
 }
 
 Channel::~Channel() {
-    delete this->redis;
+    delete this->readingClient;
+    delete this->writingClient;
 }
+
+// Utility Functions
+RedisResponse* Channel::sendWriteCommand(std::string command) {
+    this->writingLock.lock();
+    RedisResponse *response = this->writingClient->sendCommand(command);
+    this->writingLock.unlock();
+    return response;
+}
+
+RedisResponse* Channel::sendReadCommand(std::string command) {
+    this->readingLock.lock();
+    RedisResponse *response = this->readingClient->sendCommand(command);
+    this->readingLock.unlock();
+    return response;
+}
+
+// Connection Functions
 
 bool Channel::connect(std::string ip /*= "127.0.0.1"*/, int port /*= 6379*/) {
-    if (this->redis == nullptr) {
-        this->redis = new Redis();
+    this->readingLock.lock();
+    if (this->readingClient == nullptr) {
+        this->readingClient = new Redis();
     }
-    if (this->redis->isConnected()) {
-        std::cout << "Channel Already Connected\n";
-        return true;
+    if (!connectClient(this->readingClient, ip, port)) {
+        std::cout << "Can't connect Reading Client!";
     }
-    return this->redis->connect(ip, port);
+    this->readingLock.unlock();
+    this->writingLock.lock();
+    if (this->writingClient == nullptr) {
+        this->writingClient = new Redis();
+    }
+    if (!connectClient(this->writingClient, ip, port)) {
+        std::cout << "Can't connect Reading Client!";
+    }
+    this->writingLock.unlock();
+    return this->isUp();
 }
 
-bool Channel::isConnected() {
-    if (this->redis == nullptr) {
-        return false;
-    }
-    return this->redis->isConnected();
+bool Channel::disconnect() {
+    // TODO: Implement safe disconnection
+    return true;
 }
 
-bool Channel::hasMessage(long long messageId) {
-    if (!this->redis->isConnected()) {
-        std::cout << "Channel not connected!\n";
+// Writing Operations
+
+bool Channel::sendMessageTo(long long channelId, Message *message) {
+    if (message == nullptr || !this->canWrite()) {
         return false;
     }
-    RedisResponse *response = this->redis->sendCommand("KEYS m:" + std::to_string(this->id) + ":" + std::to_string(messageId));
+    std::string messageId = "m:" + std::to_string(this->id) + ":" + std::to_string(message->getMessageId());
+    // Create message on Redis
+    std::string command = "hset " + messageId + " " + message->parseMessage();
+    std::cout << "Sending command: [" << command << "]\n";
+    // Only one thread can write at a time
+    RedisResponse *response = this->sendWriteCommand(command);
     if (response->hasError()) {
         if (response->getType() == NONE) {
-            std::cout << "Timeout\n";
-            return false;
+            std::cout << "Timeout writing message!\n";
         } else {
-            std::cout << "Error checking message:\n\t" << response->getError() << "\n";
-            return false;
+            std::cout << "Error: " << response->getError() << "\n";
         }
+        delete response;
+        return false;
     }
-    if (response->getType() == VECTOR) {
-        return response->getVectorContent().size() > 0;
+    delete response;
+    // Insert message on receiver channel 
+    command = "lpush c:" + std::to_string(channelId) + " " + messageId;
+    std::cout << "Sending command: [" << command << "]\n";
+    response = this->sendWriteCommand(command);
+    if (response->hasError()) {
+        if (response->getType() == NONE) {
+            std::cout << "Timeout sending message!\n";
+        } else {
+            std::cout << "Error: " << response->getError() << "\n";
+        }
+        delete response;
+        return false;
     }
-    return false;
+    delete response;
+    return true;
 }
 
 bool Channel::removeMessage(Message *message) {
-    if (!this->redis->isConnected()) {
-        std::cout << "Channel not connected!\n";
+    if (message == nullptr || !this->canWrite()) {
         return false;
     }
-    std::string key = "m:" + std::to_string(message->getChannelId()) + ":" + std::to_string(message->getMessageId());
-    RedisResponse *response = this->redis->sendCommand("DEL " + key);
+    // Only one thread can write at a time
+    std::string key = "m:" + message->getFormattedId();
+    RedisResponse *response = this->sendWriteCommand("DEL " + key);
     if (response->hasError()) {
         if (response->getType() == NONE) {
-            std::cout << "Timeout\n";
-            return false;
+            std::cout << "Timeout deleting message!";
         } else {
-            std::cout << "Error checking message:\n\t" << response->getError() << "\n";
-            return false;
+            std::cout << "Error: " << response->getError() << "\n";
         }
-    }
-    return true;
-}
-
-bool Channel::sendMessageTo(long long channelId, Message& message) {
-    if (!this->redis->isConnected()) {
-        std::cout << "Channel not connected!\n";
+        delete response;
         return false;
-    }
-    std::string messageId = "m:" + std::to_string(this->id) + ":" + std::to_string(message.getMessageId()); 
-    std::string command = "hset " + messageId + " " + message.parseMessage();
-    std::cout << "Sending: " << command << "\n";
-    RedisResponse *response = this->redis->sendCommand(command);
-    if (response->hasError()) {
-        if (response->getType() == NONE) {
-            std::cout << "Timeout\n";
-            return false;
-        } else {
-            std::cout << "Error creating message:\n\t" << response->getError() << "\n";
-            return false;
-        }
-    }
-    delete response;
-    command = "lpush c:" + std::to_string(channelId) + " " + messageId;
-    std::cout << "Sending: " << command << "\n";
-    response = this->redis->sendCommand(command);
-    if (response->hasError()) {
-        if (response->getType() == NONE) {
-            std::cout << "Timeout\n";
-            return false;
-        } else {
-            std::cout << "Error sending message:\n\t" << response->getError() << "\n";
-            return false;
-        }
     }
     delete response;
     return true;
 }
 
-
-// Add instant function?
-Message* Channel::awaitMessage(long timeout /*= 0*/) {
-    std::string channelId = "c:" + std::to_string(this->id);
-    RedisResponse *response = this->redis->sendCommand("BRPOP " + channelId + " " + std::to_string(timeout));
+bool Channel::flush() {
+    if (!this->canWrite()) {
+        return false;
+    }
+    RedisResponse *response = this->sendWriteCommand("DEL c:" + std::to_string(this->id));
     if (response->hasError()) {
         if (response->getType() == NONE) {
-            std::cout << "Timeout on RPOP\n";
+            std::cout << "Timeout flushin channel!";
         } else {
-            std::cout << "Error reading channel queue:\n\t" << response->getError() << "\n";    
+            std::cout << "Error: " << response->getError() << "\n";
         }
         delete response;
-        return nullptr;
+        return false;
     }
-    if (response->getType() != VECTOR) {
-        std::cout << "Non compatible behavior!";
-        delete response;
-        return nullptr;
-    }
-    // Empty response?
-    if (response->getVectorContent().size() == 0) {
-        delete response;
-        return nullptr;
-    }
-    std::string messageId = response->getVectorContent()[1]; 
     delete response;
-    response = this->redis->sendCommand("HGETALL " + messageId);
+    return true;
+}
+
+// Reading Operations
+
+Message* Channel::readMessageWithId(std::string messageId) {
+    RedisResponse *response = this->sendReadCommand("HGETALL " + messageId);
     if (response->hasError()) {
         if (response->getType() == NONE) {
             std::cout << "Timeout on HGETALL\n";
         } else {
-            std::cout << "Error reading message:\n\t" << response->getError() << "\n";
+            std::cout << "Error: " << response->getError() << "\n";
         }
         delete response;
         return nullptr;
     }
-    // Convert in the format channelId:messageId
+    // Convert messageId as cId:mId
+    std::vector<std::string> params = response->getVectorContent();
     messageId = messageId.substr(2, messageId.length());
     int messageType = -1;
-    Message *m = nullptr;
-    std::vector<std::string> params = response->getVectorContent();
     for (int i = 0; i < params.size(); i++) {
         if (params[i].compare("type") == 0 && i < params.size() - 1) {
             messageType = std::stoi(params[i + 1]);
             break;
         }
     }
-    if (messageType == -1) {
-        // std::cout << "Can't analyze message without a type!\n";
-        delete response;
-        return nullptr;
-    }
+    Message *m = nullptr;
     switch(messageType) {
         case 0:
             m = new PingMessage(messageId);
@@ -331,7 +368,7 @@ Message* Channel::awaitMessage(long timeout /*= 0*/) {
             m = new AssociateMessage(messageId, -1);
             break;
         default:
-            std::cout << "Unhandled type: " << messageType << "\n";
+            std::cout << "Unhandled Type: " << messageType << "\n";
     }
     if (m != nullptr) {
         m->parseResponse(response);
@@ -340,20 +377,85 @@ Message* Channel::awaitMessage(long timeout /*= 0*/) {
     return m;
 }
 
-bool Channel::flush() {
-    RedisResponse *response = this->redis->sendCommand("del c:" + this->id);
+Message* Channel::readMessage() {
+    if (!this->canRead()) {
+        return nullptr;
+    }
+    std::string channelId = "c:" + std::to_string(this->id);
+    RedisResponse *response = this->sendReadCommand("RPOP " + channelId);
     if (response->hasError()) {
         if (response->getType() == NONE) {
-            std::cout << "Timeout";
+            std::cout << "Timeout on RPOP\n";
         } else {
-            std::cout << "Error while flushing:\n\t" << response->getError() << "\n";
+            std::cout << "Error: " << response->getError() << "\n"; 
         }
         delete response;
-        return false;
+        return nullptr;
+    }
+    // Empty queue?
+    if (response->getType() == NLL) {
+        delete response;
+        return nullptr;
+    }
+    std::string messageId = response->getContent();
+    if (!isValidMessageId(messageId)) {
+        std::cout << "Invalid message id in queue: " << messageId << "\n";
+        delete response;
+        return nullptr;        
     }
     delete response;
-    return true;
+    return this->readMessageWithId(messageId);
 }
+
+Message* Channel::awaitMessage(long timeout /* = 0*/) {
+    if (!this->canRead()) {
+        return nullptr;
+    }
+    std::string channelId = "c:" + std::to_string(this->id);
+    RedisResponse *response = this->sendReadCommand("BRPOP " + channelId + " " + std::to_string(timeout));
+    if (response->hasError()) {
+        if (response->getType() == NONE) {
+            std::cout << "Timeout on BRPOP\n";
+        } else {
+            std::cout << "Error: " << response->getError() << "\n";
+        }
+        delete response;
+        return nullptr;
+    }
+    if (response->getType() != VECTOR) {
+        std::cout << "Unexpected behaviour from redis!";
+        delete response;
+        return nullptr;
+    }
+    // Check if response is empty
+    std::vector<std::string> params = response->getVectorContent();
+    delete response;
+    if (params.size() == 0) {
+        return nullptr;
+    }
+    std::string messageId = params[1];
+    return this->readMessageWithId(messageId);
+}
+
+// Getter
+
+long long Channel::getId() {
+    return this->id;
+}
+
+bool Channel::canRead() {
+    return this->readingClient->isConnected();
+}
+
+bool Channel::canWrite() {
+    return this->writingClient->isConnected();
+}
+
+bool Channel::isUp() {
+    return this->canRead() && this->canWrite();
+}
+
+// Setter
 
 void Channel::setId(long long id) {
     this->id = id;
