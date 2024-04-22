@@ -1,7 +1,0 @@
-[23-04-2024 00:50:14][Init][INFO] 0) ./bin/drone
-[23-04-2024 00:50:14][D1713826214658640614][INFO] 
-[23-04-2024 00:50:14][Init][INFO] Drone connected on redis with temp id: 1713826214658640614
-Sending command: [hset m:1713826214657820842:0 type 1 droneId 1713826214657820842]
-Sending command: [lpush c:0 m:1713826214657820842:0]
-[23-04-2024 00:50:18][D1713826214657820842][INFO] Consumed message m:0:9
-[23-04-2024 00:50:18][D1713826214657820842][INFO] Connected to tower
