@@ -28,7 +28,7 @@ std::string buildArgs(const PostgreArgs args) {
 
 // TODO: - Add try catch to connection
 
-Postgre::Postgre(const PostgreArgs args) {
+Postgre::Postgre(const PostgreArgs args) : transactionMutex() {
     std::string formattedArgs = buildArgs(args);
     this->conn = new pqxx::connection(formattedArgs);
     // if (!this->conn->is_open()) {
@@ -46,6 +46,7 @@ Postgre::~Postgre() {
 
 PostgreResult Postgre::execute(std::string query) {
     PostgreResult r;
+    this->transactionMutex.lock();
     try {
         pqxx::work txn(*(this->conn));
         r.result = txn.exec(query);
@@ -56,6 +57,7 @@ PostgreResult Postgre::execute(std::string query) {
         r.error = true;
         r.errorMessage = e.what();
     }
+    this->transactionMutex.unlock();
     return r;
 }
 

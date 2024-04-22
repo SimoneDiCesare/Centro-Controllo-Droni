@@ -3,6 +3,7 @@
 #include <pqxx/pqxx>
 #include <string>
 #include <tuple>
+#include <mutex>
 
 struct PostgreArgs {
     std::string ip = "127.0.0.1";
@@ -26,6 +27,7 @@ class Postgre {
         bool isConnected();
     private:
         pqxx::connection *conn;
+        std::mutex transactionMutex;
 };
 
 #endif
