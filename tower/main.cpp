@@ -6,7 +6,7 @@
 // TODO: - Argument parsing
 int main(int argc, char* argv[]) {
     logVerbose(true);
-    logOpen("test.log");
+    logOpen("tower.log");
     for (int i = 0; i < argc; i++) {
         logInfo("Init", std::to_string(i) + ") " + std::string(argv[i]));
     }

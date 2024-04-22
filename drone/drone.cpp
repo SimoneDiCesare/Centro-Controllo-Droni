@@ -1,0 +1,394 @@
+#include "drone.hpp"
+#include <iostream>
+#include "channel.hpp"
+#include <csignal>
+#include <cstdlib>
+#include <thread>
+#include <vector>
+#include <sys/time.h>
+#include "time.hpp"
+#include "log.hpp"
+
+// Drone class
+
+// Utility functions
+
+void Drone::logi(std::string message) {
+    logInfo("D" + std::to_string(this->id), message);
+}
+
+void Drone::loge(std::string message) {
+    logError("D" + std::to_string(this->id), message);
+}
+
+void Drone::logd(std::string message) {
+    logDebug("D" + std::to_string(this->id), message);
+}
+
+// Can be simplified in just Time::nanos()?
+long long Drone::createId() {
+    return Time::nanos();
+}
+
+// Constructors and Deconstructor
+
+Drone::Drone() : Drone(Drone::createId()){
+
+}
+
+Drone::Drone(long long id){
+    this->id = id;
+    this->posX = 0;
+    this->posY = 0;
+    this->batteryAutonomy = std::chrono::seconds(0);
+    this->batteryLife = std::chrono::seconds(0);
+    this->state = DroneState::WAITING;
+    this->channel = nullptr;
+    this->running = false;
+}
+
+Drone::~Drone() {
+    if (this->channel != nullptr) {
+        delete this->channel;
+    }
+}
+
+// Drone Functions
+
+bool Drone::connectChannel(std::string ip, int port) {
+    if (this->channel == nullptr) {
+        this->channel = new Channel(this->id);
+    }
+    if (this->channel->isConnected()) {
+        loge("Channel already up!");
+        return false;
+    }
+    bool connected = this->channel->connect();
+    if (connected) {
+        logi("Drone connected on channel " + std::to_string(this->id));
+    } else {
+        loge("Can't create channel connection!");
+    }
+    return connected;
+}
+
+bool Drone::connectToTower() {
+    if (!this->channel->isConnected()) {
+        loge("Can't start drone without a connection!");
+        return false;
+    }
+    // Setting timeout for redis responses
+    AssociateMessage message(Time::nanos(), this->id);
+    this->channel->sendMessageTo(0, message);
+    Message *response = this->channel->awaitMessage(10);
+    if (response == nullptr) {
+        loge("Can't enstablish connection to tower!");
+        return false;
+    }
+    if (AssociateMessage *association = dynamic_cast<AssociateMessage*>(response)) {
+        long long associateId = association->getDroneId();
+        if (this->id != associateId) {
+            logi("New Id: " + std::to_string(associateId));
+            this->id = associateId;
+            this->channel->setId(this->id);
+        }
+        // Consume message
+        bool deleted = this->channel->removeMessage(association);
+        if (deleted) {
+            logi("Consumed message m:" + association->getFormattedId());
+        }  else {
+            logi("Can't delete message m:" + association->getFormattedId());
+        }
+        delete association;
+    }
+    delete response;
+    // TODO: Send infos to tower
+    return true;
+}
+
+void Drone::start() {
+    // Enstablish connection to tower
+    bool connectedToTower = this->connectToTower();
+    if (!connectedToTower) {
+        loge("Can't connect to tower!");
+        return;
+    }
+    logi("Connected to tower");
+    // Start loop
+    std::vector<std::thread> threads;
+    this->running = true;
+    while (this->running) {
+        Message *message = this->channel->awaitMessage();
+        if (message == nullptr) {
+            // No message received. Maybe ping tower?
+            continue;
+        }
+        logi("Received message m:" + message->getFormattedId());
+        threads.emplace_back(&Drone::handleMessage, this, message);
+        // Free up completed threads
+        for (auto it = threads.begin(); it != threads.end();) {
+            if (it->joinable()) {
+                it ++;
+            } else {
+                it = threads.erase(it);
+            }
+        }
+    }
+    // Disconnect drone
+    // Wait threads to finish
+    for (auto &thread : threads) {
+        thread.join();
+    }
+    // TODO: Implement disconnect logic
+}
+
+// What are (x, y)? Target position? Consider a step approach
+void Drone::moveTo(int x, int y) {
+    // Movement logic
+    this->posX = x;
+    this->posY = y;
+    // Check logic behind this
+    this->accelerate(30);
+}
+
+// Logically valid? Consider a step approach
+void Drone::accelerate(int amount) {
+    this->velocity = amount;
+}
+
+void Drone::handleMessage(Message *message) {
+    if (message == nullptr) {
+        return;
+    }
+    logi("Handling message m:" + message->getFormattedId());
+    // Message handling logic
+}
+
+// Setter
+
+void Drone::setPosX(int posX) {
+    this->posX = posX;
+}
+
+void Drone::setPosY(int posY) {
+    this->posY = posY;
+}
+
+void Drone::setBatteryAutonomy(std::chrono::seconds batteryAutonomy) {
+    this->batteryAutonomy = batteryAutonomy;
+}
+
+void Drone::setBatteryLife(std::chrono::seconds batteryLife) {
+    this->batteryLife = batteryLife;
+}
+
+void Drone::setState(DroneState state) {
+    this->state = state;
+}
+
+// Getter
+
+long long Drone::getId() {
+    return this->id;
+}
+
+int Drone::getPosX() {
+    return this->posX;
+}
+
+int Drone::getPosY() {
+    return this->posY;
+}
+
+std::chrono::seconds Drone::getBatteryAutonomy() {
+    return this->batteryAutonomy;
+}
+
+std::chrono::seconds Drone::getBatteryLife() {
+    return this->batteryLife;
+}
+
+DroneState Drone::getState() {
+    return this->state;
+}
+
+int Drone::getRangeOfAction() {
+    return this->rangeOfAction;
+}
+
+int Drone::getVelocity() {
+    return this->velocity;
+}
+
+
+
+
+/*
+
+
+int Droni::timeID(){
+    struct timeval currentTime;
+    gettimeofday(&currentTime, NULL);
+
+    long milliseconds = currentTime.tv_sec * 1000 + currentTime.tv_usec / 1000;
+    return milliseconds;
+}
+
+Droni::Droni()
+{   
+    ID = timeID();
+    MaxPwr = 100;
+    Vel = 0;  
+    RoA = 6;
+    Bat = 100;
+    PosX = 0;
+    PosY = 0;
+    Stt = WAITING;
+}
+
+Droni::~Droni(){
+    running = false;
+    delete this->channel;
+}
+
+void Droni::Start(){
+
+    this->channel->connect();
+    AssociateMessage *MessageNewID = new AssociateMessage (0 , ID);
+    this->channel->sendMessageTo(0 , *MessageNewID);
+
+    
+
+    // controlla se il canale si è conesso bene 
+    if (!this->channel->isConnected()) {
+        std::cout << "Can't start tower without a connected channel!\n";
+        return;
+    }
+    
+    std::vector<std::thread> threads;
+
+    
+
+    this->running = true;
+    while (this->running) {
+        // Attende un messaggio dal canale della torre
+        Message *message = this->channel->awaitMessage();
+        
+        // TODO: - Implement Multithreading for requests
+        //       - Implement Signals for Terminating Process
+        //       - Implement Response Logic
+        
+        // Se non viene ricevuto alcun messaggio
+        if (message == NULL) {
+            // Possibile stampare un messaggio di debug (commentato qui)
+        } else {
+            // Se viene ricevuto un messaggio, stampa le informazioni relative ad esso
+            std::cout << "Received Message: m:" << message->getChannelId() << ":" << message->getMessageId() << "\n";
+            
+            // Crea un nuovo thread per gestire il messaggio
+            threads.emplace_back(&Droni::handleMessage, this, message);
+        }
+        
+        // Rimuove i thread terminati dal vettore di thread
+        for (auto it = threads.begin(); it != threads.end(); ) {
+            if (it->joinable()) {
+                it++;
+            } else {
+                it = threads.erase(it);
+            }
+        }
+    }
+    // Attende che tutti i thread creati abbiano terminato l'esecuzione prima di terminare
+    for (auto& thread : threads) {
+        thread.join();
+    }
+    // TODO: - Disconnect and release drones
+    //       - Exit with received signal 
+}
+
+void Droni::connect(std::string ip, int port) {
+    // Crea un nuovo oggetto Channel e lo assegna al membro "channel" della classe Tower
+    this->channel = new Channel(ID);
+    
+    // Tenta di connettere il canale all'indirizzo IP e alla porta specificati
+    bool connected = this->channel->connect(ip, port);
+    
+    // Verifica se la connessione è riuscita
+    if (!connected) {
+        // Se la connessione non è riuscita, stampa un messaggio di avviso
+        std::cout << "Can't create channel for Droni\n";
+    }
+}
+
+int Droni::SetID(int id){
+    if (id == 0) {
+        // Se l'ID è 0, restituisci un codice di errore
+        return -1;
+    } 
+    // Imposta l'ID con il valore fornito
+    ID = id;
+    // Restituisci 0 per indicare che l'operazione è avvenuta con successo
+    return 0;
+}
+
+void Droni::SetStt(droniState Stato){
+    Stt = Stato;
+}
+
+void Droni::Movimento(int X, int Y){
+    // aggiungere controllo per non fare uscire i droni dai confini della griglia 
+    PosX = X;
+    PosY = Y;
+    // quando si chiama il moviemnto di sicuro accelera 
+    Accelerazione(30);
+}
+
+int Droni::GetBatteria(){
+    return Bat;
+}
+
+droniState Droni::GetStato(){
+    return Stt;
+}
+
+int Droni::GetVelocita(){
+    return Vel;
+}
+
+int Droni::GetRaggio(){
+    return RoA;
+}
+
+//chiedere se vale la pena fare una struttura per rappresentare la posizione
+int Droni::GetPosX(){
+    return PosX;
+}
+
+int Droni::GetPosY(){
+    return PosY;
+}
+
+void Droni::Accelerazione(int vel){
+    Vel = vel;
+}
+
+void Droni::handleSignal(int signal) {
+    std::cout << "Received Signal: "  << signal << "\n";
+    Droni::running = false;
+}
+
+void Droni::handleMessage(Message* message) {
+    // Verifica se il puntatore al messaggio è nullo
+    if (message == NULL) {
+        // Se il messaggio è nullo, non c'è nulla da gestire, quindi la funzione esce immediatamente
+        return;
+    }
+    
+    // TODO: - Process message information
+    // Stampa l'ID del messaggio
+    std::cout << message->getMessageId() << "\n";
+    
+    // Elimina il messaggio per evitare memory leak
+    delete message;
+}
+*/

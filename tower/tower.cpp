@@ -7,18 +7,10 @@
 #include <thread>
 #include <vector>
 #include "log.hpp"
-
-long long nanos() {
-    auto currentTime = std::chrono::high_resolution_clock::now();
-    // Convert the time point to nanoseconds since epoch
-    auto nanoseconds_since_epoch = std::chrono::time_point_cast<std::chrono::nanoseconds>(currentTime).time_since_epoch().count();
-    // Store the nanoseconds in a long long
-    long long currentNanoseconds = nanoseconds_since_epoch;
-    return currentNanoseconds;
-}
+#include "time.hpp"
 
 long long Tower::generateMessageId() {
-    long long messageId = nanos();
+    long long messageId = Time::nanos();
     while (true) {
         if (this->channel->hasMessage(messageId)) {
             messageId += 1;
@@ -78,9 +70,9 @@ bool Tower::connectDb(const PostgreArgs args) {
         battery_autonomy INTERVAL,
         battery_life INTERVAL,
         dstate DSTATE,
-        last_update TIMESTAMP,
-        CHECK(id > 0)
+        last_update TIMESTAMP
         ))");
+        // CHECK(id > 0)
         if (result.error) {
             loge(result.errorMessage);
             return false;
@@ -110,10 +102,9 @@ void Tower::start() {
     this->running = true;
     std::vector<std::thread> threads;
     logi("Tower online");
-    // Timeout on awaitMessage = 5sec
-    this->channel->setTimeout(5);
     while (this->running) {
-        Message *message = this->channel->awaitMessage();
+        // 1 seconds of waiting before restarting the cycle => needs max responsitivity
+        Message *message = this->channel->awaitMessage(1);
         if (message == nullptr) {
             // If we have no message to handle, we check last updates from drones
             // If a last update is > x second (to decide, maybe 1-5' => 60-300'') -> ping and wait a response
@@ -145,6 +136,10 @@ long long checkDroneId(Postgre* db, long long id) {
         loge("Can't check drone id validity!");
         return id;
     }
+    if (id <= 0) {
+        loge("Can't opbtain a valid id!");
+        return id;
+    }
     PostgreResult result = db->execute("SELECT id FROM drone WHERE id = " + std::to_string(id));
     if (result.error) {
         loge(result.errorMessage);
@@ -165,11 +160,15 @@ void Tower::handleAssociation(AssociateMessage *message) {
     // Get drones info
     PostgreResult result = this->db->execute("INSERT INTO drone (id, x, y, battery_autonomy, battery_life, dstate, last_update) VALUES (" + std::to_string(validId) + ", 0, 0, '00:00:00', '00:00:00', 'waiting', CURRENT_TIMESTAMP)");
     if (result.error) {
-        loge(result.errorMessage);
+        logError("DB", result.errorMessage);
     }
     long long messageId = generateMessageId();
     AssociateMessage *m = new AssociateMessage(messageId, validId);
     this->channel->sendMessageTo(id, *m);
+}
+
+void Tower::handleInfoMessage(DroneInfoMessage *message) {
+    
 }
 
 void Tower::handleMessage(Message* message) {

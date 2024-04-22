@@ -17,8 +17,9 @@ class Tower {
         static void handleSignal(int signal);
         long long generateMessageId();
         // Handle functions
-        void handlePing(PingMessage *message);
+        void handlePing(PingMessage*);
         void handleAssociation(AssociateMessage*);
+        void handleInfoMessage(DroneInfoMessage*);
         // Params
         Channel* channel;
         Postgre* db;

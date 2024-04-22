@@ -12,8 +12,8 @@ Message::Message(std::string id) {
         std::cout << "Invalid ID: " << id << "\n";
         return;
     } else {
-        this->channelId = std::stoi(id.substr(0, delimiter));
-        this->messageId = std::stoi(id.substr(delimiter + 1, id.length()));
+        this->channelId = std::stoll(id.substr(0, delimiter));
+        this->messageId = std::stoll(id.substr(delimiter + 1, id.length()));
     }
 }
 
@@ -30,8 +30,12 @@ long long Message::getMessageId() {
     return this->messageId;
 }
 
-int Message::getChannelId() {
+long long Message::getChannelId() {
     return this->channelId;
+}
+
+std::string Message::getFormattedId() {
+    return std::to_string(this->channelId) + ":" + std::to_string(this->messageId);
 }
 
 // Ping Message
@@ -165,7 +169,7 @@ int LocationMessage::getY() {
 
 // Channel Class
 
-Channel::Channel(int id) {
+Channel::Channel(long long id) {
     this->id = id;
     this->redis = nullptr;
 }
@@ -232,7 +236,7 @@ bool Channel::removeMessage(Message *message) {
     return true;
 }
 
-bool Channel::sendMessageTo(int channelId, Message& message) {
+bool Channel::sendMessageTo(long long channelId, Message& message) {
     if (!this->redis->isConnected()) {
         std::cout << "Channel not connected!\n";
         return false;
@@ -267,18 +271,11 @@ bool Channel::sendMessageTo(int channelId, Message& message) {
     return true;
 }
 
-void Channel::setTimeout(long timeout) {
-    if (timeout != -1) {
-        bool succes = this->redis->setTimeout(timeout);
-        if (!succes) {
-            std::cout << "Can't set timeout\nRunning until a message is received\n";
-        }
-    }
-}
 
-Message* Channel::awaitMessage() {
+// Add instant function?
+Message* Channel::awaitMessage(long timeout /*= 0*/) {
     std::string channelId = "c:" + std::to_string(this->id);
-    RedisResponse *response = this->redis->sendCommand("RPOP " + channelId);
+    RedisResponse *response = this->redis->sendCommand("BRPOP " + channelId + " " + std::to_string(timeout));
     if (response->hasError()) {
         if (response->getType() == NONE) {
             std::cout << "Timeout on RPOP\n";
@@ -288,12 +285,17 @@ Message* Channel::awaitMessage() {
         delete response;
         return nullptr;
     }
-    // Check if queue is empty
-    if (response->getType() == NLL) {
+    if (response->getType() != VECTOR) {
+        std::cout << "Non compatible behavior!";
         delete response;
         return nullptr;
     }
-    std::string messageId = response->getContent(); 
+    // Empty response?
+    if (response->getVectorContent().size() == 0) {
+        delete response;
+        return nullptr;
+    }
+    std::string messageId = response->getVectorContent()[1]; 
     delete response;
     response = this->redis->sendCommand("HGETALL " + messageId);
     if (response->hasError()) {
@@ -351,4 +353,8 @@ bool Channel::flush() {
     }
     delete response;
     return true;
+}
+
+void Channel::setId(long long id) {
+    this->id = id;
 }

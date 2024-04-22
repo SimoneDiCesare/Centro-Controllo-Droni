@@ -11,11 +11,12 @@ class Message {
         virtual void parseResponse(RedisResponse*) = 0;
         virtual std::string parseMessage() = 0;
         long long getMessageId();
-        int getChannelId();
+        long long getChannelId();
+        std::string getFormattedId();
         virtual int getType() {return -1;};
     private:
         long long messageId;
-        int channelId;
+        long long channelId;
 };
 
 class PingMessage : public Message {
@@ -93,19 +94,19 @@ class DisconnectMessage: public Message {
 
 class Channel {
     public:
-        Channel(int id);
+        Channel(long long id);
         ~Channel();
         bool connect(std::string ip = "127.0.0.1", int port = 6379);
-        bool sendMessageTo(int channelId, Message& message);
+        bool sendMessageTo(long long channelId, Message& message);
         bool hasMessage(long long messageId);
         bool removeMessage(Message *message);
         bool isConnected();
-        Message* awaitMessage();
-        void setTimeout(long timeout = -1);
+        Message* awaitMessage(long timeout = 0);
         bool flush();
+        void setId(long long id);
     private:
         Redis* redis;
-        int id;
+        long long id;
 };
 
 #endif
