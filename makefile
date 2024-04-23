@@ -1,33 +1,61 @@
-# TODO: Check drone files and target
-# Compiler and Flags
+# Compiler
 CC = gcc
-CCFLAGS = -g -O2 -Iutils
+CCFLAGS_D = -g -O0 -Iutils -Ipostgresql -Iredis
+CCFLAGS = -O2 -Iutils -Ipostgresql -Iredis
+# Libs
 LIBS = -lstdc++
 POSTGRESQL_LIBS = -lpqxx -lpq
-TOWER_FILES = tower/main.cpp tower/tower.cpp
-DRONE_FILES = drone/main.cpp drone/drone.cpp
-REDIS_FILES = utils/redis.cpp utils/channel.cpp
-UTILITY_FILES = utils/log.cpp utils/time.cpp
-POSTGRESQL_FILES = utils/postgresql.cpp
+# Directories
+BIN_DIR := bin
+TOWER_DIR := tower
+DRONE_DIR := drone
+REDIS_DIR := redis
+UTILITY_DIR := utils
+POSTGRESQL_DIR := postgresql
+# Code Files
+TOWER_FILES = $(wildcard $(TOWER_DIR)/*.cpp)
+DRONE_FILES = $(wildcard $(DRONE_DIR)/*.cpp)
+REDIS_FILES = $(wildcard $(REDIS_DIR)/*.cpp)
+UTILITY_FILES = $(wildcard $(UTILITY_DIR)/*.cpp)
+POSTGRESQL_FILES = $(wildcard $(POSTGRESQL_DIR)/*.cpp)
+# Objects Files 
+TOWER_OBJS := $(addprefix $(BIN_DIR)/, $(TOWER_FILES:.cpp=.o))
+DRONE_OBJS := $(addprefix $(BIN_DIR)/, $(DRONE_FILES:.cpp=.o))
+REDIS_OBJS := $(addprefix $(BIN_DIR)/, $(REDIS_FILES:.cpp=.o))
+UTILITY_OBJS := $(addprefix $(BIN_DIR)/, $(UTILITY_FILES:.cpp=.o))
+POSTGRESQL_OBJS := $(addprefix $(BIN_DIR)/, $(POSTGRESQL_FILES:.cpp=.o))
 
-# Targets
-TARGETS = tower drone
+# Creating directories
+$(shell mkdir -p $(BIN_DIR)/$(TOWER_DIR) $(BIN_DIR)/$(DRONE_DIR) $(BIN_DIR)/$(REDIS_DIR) $(BIN_DIR)/$(UTILITY_DIR) $(BIN_DIR)/$(POSTGRESQL_DIR))
 
-# Default Target
-all: $(TARGETS)
+PROGS := $(BIN_DIR)/tower_exe $(BIN_DIR)/drone_exe
 
-$(shell mkdir -p bin)
+all: $(PROGS)
 
-# Tower Executable
-tower: $(TOWER_FILES) $(REDIS_FILES)
-	$(CC) $(CCFLAGS) $(TOWER_FILES) $(UTILITY_FILES) $(REDIS_FILES) $(POSTGRESQL_FILES) -o bin/tower $(LIBS) $(POSTGRESQL_LIBS)
+# Compiling Targets
+$(BIN_DIR)/$(TOWER_DIR)/%.o: $(TOWER_DIR)/%.cpp
+	$(CC) $(CCFLAGS) -c $< -o $@
 
-# Drone Executable
-drone: $(DRONE_FILES) $(REDIS_FILES)
-	$(CC) $(CCFLAGS) $(DRONE_FILES) $(UTILITY_FILES) $(REDIS_FILES) -o bin/drone $(LIBS)
+$(BIN_DIR)/$(DRONE_DIR)/%.o: $(DRONE_DIR)/%.cpp
+	$(CC) $(CCFLAGS) -c $< -o $@
+
+$(BIN_DIR)/$(REDIS_DIR)/%.o: $(REDIS_DIR)/%.cpp
+	$(CC) $(CCFLAGS) -c $< -o $@
+
+$(BIN_DIR)/$(UTILITY_DIR)/%.o: $(UTILITY_DIR)/%.cpp
+	$(CC) $(CCFLAGS) -c $< -o $@
+
+$(BIN_DIR)/$(POSTGRESQL_DIR)/%.o: $(POSTGRESQL_DIR)/%.cpp
+	$(CC) $(CCFLAGS) -c $< -o $@
+
+$(BIN_DIR)/tower_exe: $(TOWER_OBJS) $(REDIS_OBJS) $(UTILITY_OBJS) $(POSTGRESQL_OBJS)
+	$(CC) $(CCFLAGS) -o $@ $^ $(LIBS) $(POSTGRESQL_LIBS)
+
+$(BIN_DIR)/drone_exe: $(DRONE_OBJS) $(REDIS_OBJS) $(UTILITY_OBJS)
+	$(CC) $(CCFLAGS) -o $@ $^ $(LIBS)
+
+.PHONY: all clean
 
 clean:
-	@echo "Cleaning Executables"
-	rm -f bin/tower bin/drone
-
-.PHONY: all clean tower drone
+	@echo "Cleaning binaries"
+	rm -rf bin
