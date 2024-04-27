@@ -19,4 +19,5 @@ int main(int argc, char* argv[]){
         logInfo("Init", "Drone connected on redis with temp id: " + std::to_string(drone.getId()));
     }
     drone.start();
+    return 0;
 }

@@ -3,6 +3,8 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <tuple>
+#include <chrono>
 
 // utility local functions
 
@@ -150,21 +152,92 @@ DroneInfoMessage::DroneInfoMessage(long long messageId, long long droneId) : Mes
 void DroneInfoMessage::parseResponse(RedisResponse* response) {
     if (response->getType() == VECTOR) {
         std::vector<std::string> data = response->getVectorContent();
-        for (int i = 0; i < data.size(); i++) {
-            std::string value = data[i];
-            if (value.compare("droneId") == 0) {
-                this->droneId = std::stoll(data[i + 1]);
+        for (int i = 0; i < data.size(); i+=2) {
+            std::string key = data[i];
+            if (key.compare("type") == 0) {
+                continue;
+            }
+            std::string value = data[i + 1];
+            int intValue = std::stoi(value);
+            long long longValue = std::stoll(value);
+            if (key.compare("droneId") == 0) {
+                this->droneId = longValue;
+            } else if (key.compare("x") == 0) {
+                this->posX = intValue;
+            } else if (key.compare("y") == 0) {
+                this->posY = intValue;
+            } else if (key.compare("batteryAutonomy") == 0) {
+                this->batteryAutonomy = longValue;
+            } else if (key.compare("batteryLife") == 0) {
+                this->batteryLife = longValue;
+            } else if (key.compare("state") == 0) {
+                this->state = intValue;
             }
         }
     }
 }
 
 std::string DroneInfoMessage::parseMessage() {
-    return "type " + std::to_string(this->getType()) + " droneId " + std::to_string(this->droneId);
+    std::string message = "type " + std::to_string(this->getType());
+    message += " droneId " + std::to_string(this->droneId);
+    message += " x " + std::to_string(this->posX);
+    message += " y " + std::to_string(this->posY);
+    message += " battery_autonomy " + std::to_string(this->batteryAutonomy);
+    message += " battery_life " + std::to_string(this->batteryLife);
+    message += " state " + std::to_string(this->state);
+    return message;
 }
+
+// Getter
 
 long long DroneInfoMessage::getDroneId() {
     return this->droneId;
+}
+
+int DroneInfoMessage::getPosX() {
+    return this->posX;
+}
+
+int DroneInfoMessage::getPosY() {
+    return this->posY;
+}
+
+long long DroneInfoMessage::getBatteryAutonomy() {
+    return this->batteryAutonomy;
+}
+
+long long DroneInfoMessage::getBatteryLife() {
+    return this->batteryLife;
+}
+
+int DroneInfoMessage::getState() {
+    return this->state;
+} 
+
+// Setter
+
+void DroneInfoMessage::setDroneId(long long id) {
+    this->droneId = id;
+}
+
+void DroneInfoMessage::setPosX(int x) {
+    this->posX = x;
+}
+
+void DroneInfoMessage::setPosY(int y) {
+    this->posY = y;
+}
+
+void DroneInfoMessage::setBatteryAutonomy(long long batteryAutonomy) {
+    this->batteryAutonomy = batteryAutonomy;
+}
+
+void DroneInfoMessage::setBatteryLife(long long batteryLife) {
+    this->batteryLife = batteryLife;
+}
+
+void DroneInfoMessage::setState(int state) {
+    this->state = state;
 }
 
 // Location Message Class
@@ -180,28 +253,43 @@ LocationMessage::LocationMessage(long long messageId) : Message(messageId) {
 void LocationMessage::parseResponse(RedisResponse* response) {
     if (response->getType() == VECTOR) {
         std::vector<std::string> data = response->getVectorContent();
-        for (int i = 0; i < data.size(); i++) {
-            std::string value = data[i];
-            if (value.compare("x") == 0) {
-                this->x = std::stoi(data[i + 1]);
+        for (int i = 0; i < data.size(); i+=2) {
+            std::string key = data[i];
+            if (key.compare("type") == 0) {
+                continue;
             }
-            if (value.compare("y") == 0) {
-                this->y = std::stoi(data[i + 1]);
-            }
+            std::string value = data[i + 1];
+            this->locations.push_back(std::tuple<char, int>(key.at(0), std::stoi(value)));
         }
     }
 }
 
 std::string LocationMessage::parseMessage() {
-    return "type " + std::to_string(this->getType()) + " x " + std::to_string(this->x) + " y " + std::to_string(this->y);
+    std::string data = "type " + std::to_string(this->getType());
+    int xCount = 0;
+    int yCount = 0;
+    for (int i = 0; i < this->locations.size(); i++) {
+        char axis = std::get<0>(this->locations[i]);
+        std::string axisVar(1, axis);
+        if (axis == 'x') {
+            axisVar += std::to_string(xCount);
+            xCount++;
+        } else if (axis == 'y') {
+            yCount++;
+            axisVar += std::to_string(yCount);
+        }
+        std::string value = std::to_string(std::get<1>(this->locations[i]));
+        data = data + " " + axisVar + " " + value;
+    }
+    return data;
 }
 
-int LocationMessage::getX() {
-    return this->x;
+std::tuple<char, int> LocationMessage::getLocation(int i) {
+    return this->locations[i];
 }
 
-int LocationMessage::getY() {
-    return this->y;
+int LocationMessage::getStepCount() {
+    return this->locations.size();
 }
 
 // Channel Class
@@ -367,6 +455,18 @@ Message* Channel::readMessageWithId(std::string messageId) {
         case 1:
             m = new AssociateMessage(messageId, -1);
             break;
+        case 2:
+            m = new DroneInfoMessage(messageId, -1);
+            break;
+        case 3:
+            m = new LocationMessage(messageId);
+            break;
+        case 4:
+            // m = new RetireMessage(messageId, -1);
+            break;
+        case 5:
+            // m = new DisconnectMessage(messageId, -1);
+            break;
         default:
             std::cout << "Unhandled Type: " << messageType << "\n";
     }
@@ -423,7 +523,7 @@ Message* Channel::awaitMessage(long timeout /* = 0*/) {
         return nullptr;
     }
     if (response->getType() != VECTOR) {
-        std::cout << "Unexpected behaviour from redis!";
+        std::cout << "Unexpected behaviour from redis! Await Type: " << response->getType() << "\n";
         delete response;
         return nullptr;
     }

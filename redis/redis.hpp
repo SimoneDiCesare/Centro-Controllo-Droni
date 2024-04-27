@@ -29,6 +29,7 @@
 enum RedisResponseType {
     NONE,
     STRING,
+    BULK_STRING,
     ERROR,
     INTEGER,
     VECTOR,

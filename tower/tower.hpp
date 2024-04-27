@@ -21,6 +21,7 @@ class Tower {
         void handlePing(PingMessage*);
         void handleAssociation(AssociateMessage*);
         void handleInfoMessage(DroneInfoMessage*);
+        void handleLocationMessage(LocationMessage*);
         // Params
         Channel* channel;
         Postgre* db;

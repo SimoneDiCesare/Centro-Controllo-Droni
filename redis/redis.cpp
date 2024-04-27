@@ -72,56 +72,35 @@ void RedisResponse::setContent(std::string content) {
         }
         case STRING:
         case ERROR: {
-            // Check empty string -> null result from redis
+            std::size_t delimiter = content.find("\r\n");
+            this->content = content.substr(0, delimiter);
+            break;
+        }
+        case BULK_STRING: {
             if (content.at(0) == '-' && content.at(1) == '1') {
                 this->content = "null";
                 this->type = NLL;
                 break;
             }
             std::size_t delimiter = content.find("\r\n");
-            if (delimiter == std::string::npos) {
-                this->content = content;
-            } else {
-                std::string line = content.substr(0, delimiter);
-                if (content.length() > delimiter + 2) {
-                    int contentSize = std::stoi(line);
-                    this->content = content.substr(delimiter + 2, delimiter + contentSize - 1);
-                } else {
-                    this->content = line;
-                }
-            }
+            int length = std::stoi(content.substr(0, delimiter));
+            this->content = content.substr(delimiter + 2, length);
             break;
         }
         case VECTOR: {
             std::size_t delimiter = content.find("\r\n");
-            std::string line = content.substr(0, delimiter);
-            int start = delimiter + 2;
-            int size = std::stoi(line);
-            line = content.substr(start, content.length());
-            bool skipNext = false;
-            for (int i = 0; i < size; i++) {
-                delimiter = line.find("\r\n");
-                if (skipNext) {
-                    line = line.substr(delimiter + 2, content.length());
-                    skipNext = false;
-                    i -= 1;
-                    continue;
-                }
-                switch(line.at(0)) {
-                    case '$': {
-                        int lineSize = std::stoi(line.substr(1, delimiter));
-                        std::string s = line.substr(delimiter + 2, delimiter + lineSize - 2);
-                        // line = line.substr(delimiter + lineSize + 3);
-                        this->vectorContent.push_back(s);
-                        skipNext = true;
-                        break;
-                    }
-                    default:
-                        std::cout << "Need to parse type: " << line.at(0) << "\n";
-                        line = line.substr(delimiter + 2, content.length());
-                        break;
-                }
-                line = line.substr(delimiter + 2, content.length());
+            int elementCount = std::stoi(content.substr(0, delimiter));
+            if (elementCount == -1) {
+                // std::cout << "Empty Array!\n";
+                break;
+            }
+            content = content.substr(delimiter + 2);
+            for (int i = 0; i < elementCount; i++) {
+                delimiter = content.find("\r\n");
+                int elementLength = std::stoi(content.substr(1, delimiter - 1));
+                std::string element = content.substr(delimiter + 2, elementLength);
+                this->vectorContent.push_back(element);
+                content = content.substr(delimiter + 4 + elementLength);
             }
             break;
         }
@@ -218,7 +197,7 @@ RedisResponse* Redis::sendCommand(std::string command) {
             response->setContent(dataBuffer);
             break;
         case '$':
-            response->setType(STRING);
+            response->setType(BULK_STRING);
             response->setContent(dataBuffer);
             break;
         case '*':

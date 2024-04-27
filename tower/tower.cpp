@@ -72,13 +72,13 @@ bool Tower::connectDb(const PostgreArgs args) {
         ))");
         // CHECK(id > 0)
         if (result.error) {
-            loge(result.errorMessage);
+            logError("DB", result.errorMessage);
             return false;
         }
         logi("Table drone Created");
         result = this->db->execute("TRUNCATE TABLE drone");
         if (result.error) {
-            loge(result.errorMessage);
+            logError("DB", result.errorMessage);
             return false;
         }
         logi("Table drone Cleared");
@@ -87,7 +87,7 @@ bool Tower::connectDb(const PostgreArgs args) {
         loge("Can't connected to db!");
         return false;
     }
-}
+} 
 
 void Tower::start() {
     if (!this->channel->isUp()) {
@@ -101,8 +101,9 @@ void Tower::start() {
     std::vector<std::thread> threads;
     logi("Tower online");
     while (this->running) {
+        
         // 20 seconds of waiting before restarting the cycle
-        Message *message = this->channel->awaitMessage(20);
+        Message *message = this->channel->awaitMessage(5);
         if (message == nullptr) {
             // If we have no message to handle, we check last updates from drones
             // If a last update is > x second (to decide, maybe 1-5' => 60-300'') -> ping and wait a response
@@ -131,16 +132,16 @@ void Tower::start() {
 
 long long checkDroneId(Postgre* db, long long id) {
     if (db == nullptr || !db->isConnected()) {
-        loge("Can't check drone id validity!");
+        logError("DB", "Can't check drone id validity!");
         return id;
     }
     if (id <= 0) {
-        loge("Can't opbtain a valid id!");
+        loge("Can't obtain a valid id!");
         return id;
     }
     PostgreResult result = db->execute("SELECT id FROM drone WHERE id = " + std::to_string(id));
     if (result.error) {
-        loge(result.errorMessage);
+        logError("DB", result.errorMessage);
         return id;
     }
     return result.result.empty()? id : checkDroneId(db, id + 1);
@@ -150,6 +151,7 @@ void Tower::handlePing(PingMessage *message) {
     long long id = message->getChannelId();
     PingMessage *ping = new PingMessage(generateMessageId());
     this->channel->sendMessageTo(id, ping);
+    delete ping;
 }
 
 void Tower::handleAssociation(AssociateMessage *message) {
@@ -163,10 +165,22 @@ void Tower::handleAssociation(AssociateMessage *message) {
     long long messageId = generateMessageId();
     AssociateMessage *m = new AssociateMessage(messageId, validId);
     this->channel->sendMessageTo(id, m);
+    delete m;
 }
 
 void Tower::handleInfoMessage(DroneInfoMessage *message) {
-    
+    logi(message->parseMessage());
+}
+
+void Tower::handleLocationMessage(LocationMessage *message) {
+    logi(message->parseMessage());
+    logi(std::to_string(message->getStepCount()));
+    for (int i = 0; i < message->getStepCount(); i++) {
+        auto [axis, steps] = message->getLocation(i);
+        std::string message(1, axis);
+        message += ": " + std::to_string(steps);
+        logi(message);
+    }
 }
 
 void Tower::handleMessage(Message* message) {
@@ -184,11 +198,11 @@ void Tower::handleMessage(Message* message) {
             break;
         }
         case 2: {
-            std::cout << "Drone Info Message\n";
+            this->handleInfoMessage(dynamic_cast<DroneInfoMessage*>(message));
             break;
         }
         case 3: {
-            std::cout << "Location Message\n";
+            this->handleLocationMessage(dynamic_cast<LocationMessage*>(message));
             break;
         }
         default: {

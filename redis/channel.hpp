@@ -2,6 +2,8 @@
 #define CHANNEL_HPP
 #include "redis.hpp"
 #include <string>
+#include <vector>
+#include <tuple>
 #include <mutex>
 
 class Message {
@@ -49,12 +51,31 @@ class DroneInfoMessage : public Message {
         DroneInfoMessage(long long messageId, long long droneId);
         void parseResponse(RedisResponse*);
         std::string parseMessage();
+        // Getter
         long long getDroneId();
-        int getX() {return 0;};
+        int getPosX();
+        int getPosY();
+        long long getBatteryAutonomy();
+        long long getBatteryLife();
+        int getState(); 
         int getType() {return 2;};
+        // Setter
+        void setDroneId(long long id);
+        void setPosX(int x);
+        void setPosY(int y);
+        void setBatteryAutonomy(long long batteryAutonomy);
+        void setBatteryLife(long long batteryLife);
+        void setState(int state);
     private:
         // TODO: - Fill Fields
         long long droneId;
+        int posX;
+        int posY;
+        long long batteryAutonomy;
+        long long batteryLife;
+        int state;
+        // int rangeOfAction;
+        // int velocity;
 };
 
 class LocationMessage : public Message {
@@ -63,12 +84,11 @@ class LocationMessage : public Message {
         LocationMessage(long long messageId);
         void parseResponse(RedisResponse*);
         std::string parseMessage();
-        int getX();
-        int getY();
+        std::tuple<char, int> getLocation(int i);
+        int getStepCount();
         int getType() {return 3;};
     private:
-        int x;
-        int y;
+        std::vector<std::tuple<char,int>> locations;
 };
 
 class RetireMessage : public Message {
