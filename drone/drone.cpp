@@ -30,6 +30,7 @@ long long Drone::createId() {
     return Time::nanos();
 }
 
+// Block and update id message 
 long long Drone::generateMessageId() {
     this->messageCounterLock.lock();
     long long id = this->messageCounter;
@@ -106,6 +107,7 @@ bool Drone::connectToTower() {
     }
     delete response;
     // TODO: Send infos to tower
+    
     return true;
 }
 
