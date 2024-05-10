@@ -1,3 +1,5 @@
+#ifndef DRONE_HPP
+#define DRONE_HPP
 #include <iostream>
 #include <chrono>
 #include <mutex>
@@ -14,8 +16,6 @@
 
 //[tempo][tipo mersaggio*][chi][a chi(opzionale)][cosa fa]
 //*ex mesaggio errore o di info
-
-
 
 enum DroneState {
     WAITING,
@@ -73,3 +73,5 @@ class Drone {
         void logd(std::string message);
         long long generateMessageId();
 };
+
+#endif // DRONE_HPP

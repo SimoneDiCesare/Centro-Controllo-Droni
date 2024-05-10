@@ -78,17 +78,33 @@ class DroneInfoMessage : public Message {
         // int velocity;
 };
 
+class PathMessage : public Message {
+    public:
+        PathMessage(std::string id);
+        PathMessage(long long messageId);
+        void parseResponse(RedisResponse*);
+        std::string parseMessage();
+        void setLocations(std::vector<std::tuple<char, int>>);
+        std::tuple<char, int> getLocation(int i);
+        int getStepCount();
+        int getType() {return 3;};
+    private:
+        std::vector<std::tuple<char,int>> locations;
+};
+
 class LocationMessage : public Message {
     public:
         LocationMessage(std::string id);
         LocationMessage(long long messageId);
         void parseResponse(RedisResponse*);
         std::string parseMessage();
-        std::tuple<char, int> getLocation(int i);
-        int getStepCount();
-        int getType() {return 3;};
+        int getX();
+        int getY();
+        void setLocation(int x, int y);
+        int getType() {return 4;};
     private:
-        std::vector<std::tuple<char,int>> locations;
+        int x;
+        int y;
 };
 
 class RetireMessage : public Message {

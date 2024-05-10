@@ -242,15 +242,15 @@ void DroneInfoMessage::setState(int state) {
 
 // Location Message Class
 
-LocationMessage::LocationMessage(std::string id) : Message(id) {
+PathMessage::PathMessage(std::string id) : Message(id) {
     
 }
 
-LocationMessage::LocationMessage(long long messageId) : Message(messageId) {
+PathMessage::PathMessage(long long messageId) : Message(messageId) {
     
 }
 
-void LocationMessage::parseResponse(RedisResponse* response) {
+void PathMessage::parseResponse(RedisResponse* response) {
     if (response->getType() == VECTOR) {
         std::vector<std::string> data = response->getVectorContent();
         for (int i = 0; i < data.size(); i+=2) {
@@ -264,7 +264,7 @@ void LocationMessage::parseResponse(RedisResponse* response) {
     }
 }
 
-std::string LocationMessage::parseMessage() {
+std::string PathMessage::parseMessage() {
     std::string data = "type " + std::to_string(this->getType());
     int xCount = 0;
     int yCount = 0;
@@ -284,12 +284,66 @@ std::string LocationMessage::parseMessage() {
     return data;
 }
 
-std::tuple<char, int> LocationMessage::getLocation(int i) {
+std::tuple<char, int> PathMessage::getLocation(int i) {
     return this->locations[i];
 }
 
-int LocationMessage::getStepCount() {
+int PathMessage::getStepCount() {
     return this->locations.size();
+}
+
+void PathMessage::setLocations(std::vector<std::tuple<char, int>> locations) {
+    this->locations = locations;
+}
+
+// Location Message
+
+// Location Message Class
+
+LocationMessage::LocationMessage(std::string id) : Message(id) {
+    
+}
+
+LocationMessage::LocationMessage(long long messageId) : Message(messageId) {
+    
+}
+
+void LocationMessage::parseResponse(RedisResponse* response) {
+    if (response->getType() == VECTOR) {
+        std::vector<std::string> data = response->getVectorContent();
+        for (int i = 0; i < data.size(); i+=2) {
+            std::string key = data[i];
+            std::string value = data[i + 1];
+            if (key.compare("type") == 0) {
+                continue;
+            }
+            if (key.compare("x") == 0) {
+                this->x = std::stoi(value);
+            } else if (key.compare("y") == 0) {
+                this->y = std::stoi(value);
+            }
+        }
+    }
+}
+
+std::string LocationMessage::parseMessage() {
+    std::string data = "type " + std::to_string(this->getType());
+    data = data + " x " + std::to_string(this->x);
+    data = data + " y " + std::to_string(this->y);
+    return data;
+}
+
+void LocationMessage::setLocation(int x, int y) {
+    this->x = x;
+    this->y = y;
+}
+
+int LocationMessage::getX() {
+    return this->x;
+}
+
+int LocationMessage::getY() {
+    return this->y;
 }
 
 // Channel Class
@@ -459,9 +513,10 @@ Message* Channel::readMessageWithId(std::string messageId) {
             m = new DroneInfoMessage(messageId, -1);
             break;
         case 3:
-            m = new LocationMessage(messageId);
+            m = new PathMessage(messageId);
             break;
         case 4:
+            m = new LocationMessage(messageId);
             // m = new RetireMessage(messageId, -1);
             break;
         case 5:

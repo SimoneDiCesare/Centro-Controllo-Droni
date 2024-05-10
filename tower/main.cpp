@@ -32,11 +32,15 @@ int main(int argc, char* argv[]) {
     if (!connected) {
         logError("Init", "Can't start process without postgre connection!");
         return 1;
+    } else {
+        logInfo("Init", "Postgre Connection Enstablished");
     }
     connected = tower.connectChannel("127.0.0.1", 6379);
     if (!connected) {
         logError("Init", "Can't start process without redis connection!");
         return 1;
+    } else {
+        logInfo("Init", "Redis Connection Enstablished");
     }
     tower.start();
     return 0;

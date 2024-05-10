@@ -5,8 +5,8 @@ CREATE TABLE IF NOT EXISTS drone (
     id BIGINT PRIMARY KEY NOT NULL,
     x INTEGER NOT NULL,
     y INTEGER NOT NULL,
-    battery_autonomy INTERVAL,
-    battery_life INTERVAL,
+    battery_autonomy BIGINT,
+    battery_life BIGINT,
     dstate DSTATE,
     last_update TIMESTAMP,
     CHECK(id > 0)

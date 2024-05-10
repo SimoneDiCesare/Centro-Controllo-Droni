@@ -1,5 +1,6 @@
 #include "time.hpp"
 #include <chrono>
+#include <string>
 
 long long Time::nanos() {
     auto currentTime = std::chrono::high_resolution_clock::now();
