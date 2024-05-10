@@ -142,6 +142,10 @@ void Tower::calcolateDronePath(Drone drone) {
     PathMessage *message = new PathMessage(this->generateMessageId());
     message->setLocations(locations);
     this->channel->sendMessageTo(drone.id, message);
+    PostgreResult result = this->db->execute("UPDATE drone SET dstate = 'monitoring', last_update = " + CURRENT_TIMESTAMP + " WHERE id = " + std::to_string(drone.id));
+    if (result.error) {
+        logError("DB", result.errorMessage);
+    }
     delete message;
 }
 
@@ -169,16 +173,18 @@ void Tower::checkDrones() {
     for (const Drone& drone : drones) {
         timePassed = std::chrono::duration_cast<std::chrono::seconds>(currentTime.time_since_epoch()) - drone.lastUpdate;
         logi("Time Passed: " + std::to_string(timePassed.count()));
-        if (timePassed > std::chrono::seconds(120)) {
-            logi("Pinging drone");
-            PingMessage *ping = new PingMessage(generateMessageId());
-            this->channel->sendMessageTo(drone.id, ping);
-            delete ping;
-        } else {
-            if (drone.droneState.compare("waiting")) {
-                logi("Sending drone to monitoring");
-                this->calcolateDronePath(drone);
+        if (drone.droneState.compare("waiting") == 0) {
+            logi("Sending drone to monitoring");
+            this->calcolateDronePath(drone);
+        } else if (drone.droneState.compare("monitoring") == 0) {
+            if (timePassed > std::chrono::seconds(120)) {
+                logi("Pinging drone");
+                PingMessage *ping = new PingMessage(generateMessageId());
+                this->channel->sendMessageTo(drone.id, ping);
+                delete ping;
             }
+        } else { // Charging Drone -> request for battery update
+            logi("Checking drone with state: " + drone.droneState);
         }
     }
 }

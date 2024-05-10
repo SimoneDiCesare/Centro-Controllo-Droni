@@ -5,7 +5,7 @@
 #include <tuple>
 #include <mutex>
 
-#define CURRENT_TIMESTAMP "CAST(EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) AS BIGINT)"
+#define CURRENT_TIMESTAMP std::string("CAST(EXTRACT(EPOCH FROM CURRENT_TIMESTAMP) AS BIGINT)")
 
 struct PostgreArgs {
     std::string ip = "127.0.0.1";

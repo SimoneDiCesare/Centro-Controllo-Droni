@@ -180,6 +180,10 @@ void Drone::handleMessage(Message *message) {
             break;
         }
         case 3: {
+            logi("Path Message");
+            break;
+        }
+        case 4: {
             logi("Location Message");
             break;
         }
