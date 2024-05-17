@@ -169,22 +169,45 @@ void Drone::handleMessage(Message *message) {
     // Message handling logic
     int type = message->getType();
     switch (type) {
-        case 0:
+        case 0: {
             logi("Ping!");
+            PingMessage *ping = new PingMessage(generateMessageId());
+            this->channel->sendMessageTo(id, ping);
             break;
-        case 1:
+        }
+        case 1:{
             logi("Reassociating Drone");
             break;
+        }
         case 2: {
             logi("Drone Info Message");
+            DroneInfoMessage *inf = new DroneInfoMessage(generateMessageId(), id);
+            long long batAut = batteryAutonomy.count();
+            inf->setBatteryAutonomy(batAut);
+            long long batLife = batteryLife.count();
+            inf->setBatteryLife(batLife);
+            inf->setDroneId(id);
+            inf->setPosX(posX);
+            inf->setPosY(posY);
+            inf->setState(state);
+            this->channel->sendMessageTo(id, inf);
             break;
         }
         case 3: {
             logi("Path Message");
+            PathMessage* pathMessagePtr = dynamic_cast<PathMessage*>(message);
+            int lenght = pathMessagePtr->getStepCount();
+            for (int i; i < lenght; i++){
+                std::tuple<int, int> location = pathMessagePtr->getLocation(i);
+                // aspettare la nuova politica di spostamento
+            }
             break;
         }
         case 4: {
+            // chiedere 
             logi("Location Message");
+            LocationMessage *loc = new LocationMessage(generateMessageId());
+            this->channel->sendMessageTo(id, loc);
             break;
         }
         default: {

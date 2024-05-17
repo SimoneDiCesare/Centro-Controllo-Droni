@@ -124,7 +124,7 @@ std::vector<Drone> Tower::getDrones() {
 void Tower::calcolateDronePath(Drone drone) {
     // Add algorithm
     // For now pick a random x, y movements
-    std::vector<std::tuple<char, int>> locations;
+    std::vector<std::tuple<int, int>> locations;
     int locationCount = rand() % 5; // Max 5 locations
     // (0, 0) is the upper-left corner.
     // Faulty algorithm > doesn't check bounds
@@ -137,7 +137,7 @@ void Tower::calcolateDronePath(Drone drone) {
     } else {
         amount = rand() % this->areaHeight;
     }
-    locations.push_back(std::tuple<char, int>(c, amount));
+    locations.push_back(std::tuple<int, int>(c, amount));
     // Send Location Message
     PathMessage *message = new PathMessage(this->generateMessageId());
     message->setLocations(locations);

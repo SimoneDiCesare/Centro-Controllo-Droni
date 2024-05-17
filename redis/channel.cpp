@@ -259,28 +259,22 @@ void PathMessage::parseResponse(RedisResponse* response) {
                 continue;
             }
             std::string value = data[i + 1];
-            this->locations.push_back(std::tuple<char, int>(key.at(0), std::stoi(value)));
+            this->locations.push_back(std::tuple<int, int>(key.at(0), std::stoi(value)));
         }
     }
 }
 
 std::string PathMessage::parseMessage() {
     std::string data = "type " + std::to_string(this->getType());
-    int xCount = 0;
-    int yCount = 0;
+
     for (int i = 0; i < this->locations.size(); i++) {
         char axis = std::get<0>(this->locations[i]);
         std::string axisVar(1, axis);
-        if (axis == 'x') {
-            axisVar += std::to_string(xCount);
-            xCount++;
-        } else if (axis == 'y') {
-            yCount++;
-            axisVar += std::to_string(yCount);
-        }
-        std::string value = std::to_string(std::get<1>(this->locations[i]));
-        data = data + " " + axisVar + " " + value;
+        std::string value1 = std::to_string(std::get<0>(this->locations[i]));
+        std::string value2 = std::to_string(std::get<1>(this->locations[i]));
+        data = data + " (" + value1 + " " + value2 + ") ";
     }
+    
     return data;
 }
 
@@ -292,7 +286,7 @@ int PathMessage::getStepCount() {
     return this->locations.size();
 }
 
-void PathMessage::setLocations(std::vector<std::tuple<char, int>> locations) {
+void PathMessage::setLocations(std::vector<std::tuple<int, int>> locations) {
     this->locations = locations;
 }
 

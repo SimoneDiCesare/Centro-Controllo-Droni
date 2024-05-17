@@ -40,7 +40,7 @@ Postgre::Postgre(const PostgreArgs args) : transactionMutex() {
 
 Postgre::~Postgre() {
     if (this->isConnected()) {
-        this->conn->close();
+        this->conn->disconnect();
     }
 }
 
