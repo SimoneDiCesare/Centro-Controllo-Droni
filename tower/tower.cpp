@@ -131,16 +131,11 @@ void Tower::calcolateDronePath(Drone drone) {
     int xPos = drone.posX;
     int yPos = drone.posY;
     char c = rand() % 2 == 0? 'x' : 'y';
-    int amount;
-    if (c == 'x') {
-        amount = rand() % this->areaWidth;
-    } else {
-        amount = rand() % this->areaHeight;
-    }
-    locations.push_back(std::tuple<int, int>(c, amount));
+    int xAmount = rand() % this->areaWidth;
+    int yAmount = rand() % this->areaHeight;
     // Send Location Message
-    PathMessage *message = new PathMessage(this->generateMessageId());
-    message->setLocations(locations);
+    LocationMessage *message = new LocationMessage(this->generateMessageId());
+    message->setLocation(xAmount, yAmount);
     this->channel->sendMessageTo(drone.id, message);
     PostgreResult result = this->db->execute("UPDATE drone SET dstate = 'monitoring', last_update = " + CURRENT_TIMESTAMP + " WHERE id = " + std::to_string(drone.id));
     if (result.error) {

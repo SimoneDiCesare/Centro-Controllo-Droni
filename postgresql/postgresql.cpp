@@ -40,7 +40,7 @@ Postgre::Postgre(const PostgreArgs args) : transactionMutex() {
 
 Postgre::~Postgre() {
     if (this->isConnected()) {
-        this->conn->disconnect();
+        this->disconnect();
     }
 }
 
@@ -63,4 +63,18 @@ PostgreResult Postgre::execute(std::string query) {
 
 bool Postgre::isConnected() {
     return this->conn->is_open();
+}
+
+void Postgre::disconnect() {
+    if (this->conn != nullptr) {
+#ifdef PQXX_MAJOR_VERSION
+    #if PQXX_MAJOR_VERSION >= 7
+        this->conn.disconnect();
+    #else
+        conn.close();
+    #endif
+#else
+    this->conn->close(); // Use latest version anyway
+#endif
+    }
 }

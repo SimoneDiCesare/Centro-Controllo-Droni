@@ -27,6 +27,7 @@ class Postgre {
         ~Postgre();
         PostgreResult execute(std::string query);
         bool isConnected();
+        void disconnect();
     private:
         pqxx::connection *conn;
         std::mutex transactionMutex;

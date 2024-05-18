@@ -141,12 +141,12 @@ long long AssociateMessage::getDroneId() {
 // Drone Info Message Class
 // TODO: Add all drone infos
 
-DroneInfoMessage::DroneInfoMessage(std::string id, long long droneId) : Message(id) {
-    this->droneId = droneId;
+DroneInfoMessage::DroneInfoMessage(std::string id) : Message(id) {
+    this->droneId = -1;
 }
 
-DroneInfoMessage::DroneInfoMessage(long long messageId, long long droneId) : Message(messageId) {
-    this->droneId = droneId;
+DroneInfoMessage::DroneInfoMessage(long long messageId) : Message(messageId) {
+    this->droneId = -1;
 } 
 
 void DroneInfoMessage::parseResponse(RedisResponse* response) {
@@ -242,58 +242,6 @@ void DroneInfoMessage::setState(int state) {
 
 // Location Message Class
 
-PathMessage::PathMessage(std::string id) : Message(id) {
-    
-}
-
-PathMessage::PathMessage(long long messageId) : Message(messageId) {
-    
-}
-
-void PathMessage::parseResponse(RedisResponse* response) {
-    if (response->getType() == VECTOR) {
-        std::vector<std::string> data = response->getVectorContent();
-        for (int i = 0; i < data.size(); i+=2) {
-            std::string key = data[i];
-            if (key.compare("type") == 0) {
-                continue;
-            }
-            std::string value = data[i + 1];
-            this->locations.push_back(std::tuple<int, int>(key.at(0), std::stoi(value)));
-        }
-    }
-}
-
-std::string PathMessage::parseMessage() {
-    std::string data = "type " + std::to_string(this->getType());
-
-    for (int i = 0; i < this->locations.size(); i++) {
-        char axis = std::get<0>(this->locations[i]);
-        std::string axisVar(1, axis);
-        std::string value1 = std::to_string(std::get<0>(this->locations[i]));
-        std::string value2 = std::to_string(std::get<1>(this->locations[i]));
-        data = data + " (" + value1 + " " + value2 + ") ";
-    }
-    
-    return data;
-}
-
-std::tuple<char, int> PathMessage::getLocation(int i) {
-    return this->locations[i];
-}
-
-int PathMessage::getStepCount() {
-    return this->locations.size();
-}
-
-void PathMessage::setLocations(std::vector<std::tuple<int, int>> locations) {
-    this->locations = locations;
-}
-
-// Location Message
-
-// Location Message Class
-
 LocationMessage::LocationMessage(std::string id) : Message(id) {
     
 }
@@ -315,6 +263,8 @@ void LocationMessage::parseResponse(RedisResponse* response) {
                 this->x = std::stoi(value);
             } else if (key.compare("y") == 0) {
                 this->y = std::stoi(value);
+            } else if (key.compare("movement_type") == 0) {
+                this->movementType = std::stoi(value);
             }
         }
     }
@@ -324,6 +274,7 @@ std::string LocationMessage::parseMessage() {
     std::string data = "type " + std::to_string(this->getType());
     data = data + " x " + std::to_string(this->x);
     data = data + " y " + std::to_string(this->y);
+    data = data + " movement_type " + std::to_string(this->movementType);
     return data;
 }
 
@@ -332,12 +283,56 @@ void LocationMessage::setLocation(int x, int y) {
     this->y = y;
 }
 
+void LocationMessage::setMovementType(int type) {
+    this->movementType = type;
+}
+
 int LocationMessage::getX() {
     return this->x;
 }
 
 int LocationMessage::getY() {
     return this->y;
+}
+
+int LocationMessage::getMovementType() {
+    return this->movementType;
+}
+
+// Retire Message
+RetireMessage::RetireMessage(std::string id) : Message(id) {
+    
+}
+
+RetireMessage::RetireMessage(long long messageId) : Message(messageId) {
+    
+}
+
+void RetireMessage::parseResponse(RedisResponse* response) {
+    // Nothing to parse
+}
+
+std::string RetireMessage::parseMessage() {
+    std::string data = "type " + std::to_string(this->getType());
+    return data;
+}
+
+// Disconnect Message
+DisconnectMessage::DisconnectMessage(std::string id) : Message(id) {
+    
+}
+
+DisconnectMessage::DisconnectMessage(long long messageId) : Message(messageId) {
+    
+}
+
+void DisconnectMessage::parseResponse(RedisResponse* response) {
+    // Nothing to parse
+}
+
+std::string DisconnectMessage::parseMessage() {
+    std::string data = "type " + std::to_string(this->getType());
+    return data;
 }
 
 // Channel Class
@@ -498,23 +493,22 @@ Message* Channel::readMessageWithId(std::string messageId) {
     Message *m = nullptr;
     switch(messageType) {
         case 0:
-            m = new PingMessage(messageId);
-            break;
-        case 1:
             m = new AssociateMessage(messageId, -1);
             break;
+        case 1:
+            m = new PingMessage(messageId);
+            break;
         case 2:
-            m = new DroneInfoMessage(messageId, -1);
+            m = new DroneInfoMessage(messageId);
             break;
         case 3:
-            m = new PathMessage(messageId);
+            m = new LocationMessage(messageId);
             break;
         case 4:
-            m = new LocationMessage(messageId);
-            // m = new RetireMessage(messageId, -1);
+            m = new RetireMessage(messageId);
             break;
         case 5:
-            // m = new DisconnectMessage(messageId, -1);
+            m = new DisconnectMessage(messageId);
             break;
         default:
             std::cout << "Unhandled Type: " << messageType << "\n";

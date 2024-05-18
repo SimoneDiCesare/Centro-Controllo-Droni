@@ -14,7 +14,7 @@ table, th, td {
 La Torre di Controllo ed i Droni comunicano in maniera asincrona.
 Le comunicazioni avvengono tramite Redis.
 ## Scambio di messaggi
-### Coda dei Messaggi (Canali)
+### Canali (Coda dei Messaggi)
 Ogni attore ha riservato un canale, il quale è salvato su redis come una lista con chiave = "c:**id**"
 > **Channel ID:**  
 > L'**id** presente nella chiave del canale è 0 se si tratta della torre,  
@@ -31,27 +31,29 @@ Una volta estratto il message_id dalla coda del canale, il messaggio è salvato 
 > **Esempio Creazione Messaggio**
 > hset m:32:10 type 2 x 10 y 20  
 > questo comando crea il messaggio 10 del drone 32 con i seguenti campi:  
-> 1. type 2 => Il tipo del messaggio (un messaggio di update sulla posizione)
+> 1. type 2 => Il tipo del messaggio
 > 2. x 10 => La posizione x del drone
 > 3. y 20 => La posizione y del drone
 ## La Classe Channel
-Per gestire agevolmente la ricezione e l'invio dei messaggio è stata implementata la classe Channel, la quale gestisce un canale di un attore e presenta due metodi principali:
+Per gestire agevolmente la ricezione e l'invio dei messaggio è stata implementata la classe Channel, la quale gestisce un canale di un attore.
+Per inviare e ricevere messaggi, la classe channel presenta due metodi:
 #### void sendMessageTo(int channelId, Message& message)
-Il metodo in questione esegue sul channelId (l'id canale del destinatario) il comando:
+Questo metodo permette di aggiungere alla lista di messaggi di **channelId** il messaggio **message** tramite i due comandi:
 ```
-hset m:{this.id}:{message.id} {message.parseMessage()}
-```
-
-E poi crea l'hash del messaggio:
-```
-hset m:{this.id}:{message.id} {message.parseMessage()}
+hset m:{this.id}:{message.id} {message.parseMessage()} // Creazione del messaggio su redis
+lpush c:{channelId} m:{this.id}:{message.id} // Aggiunta del messaggio al canale
 ```
 #### Message* awaitMessage(long timeout = -1)
 Questo metodo serve per aspettare l'arrivo di un messaggio all'interno di un canale, per poi leggerlo e ritornarlo.  
 Il parametro **timeout**, se diverso da -1, imposta un tempo massimo per l'attesa di un messaggio.
+### Thread Safety
+La Classe channel è thread safe, poiché gestisce le due funzioni **sendMessageTo** e **awaitMessage** tramite due mutex:  
+- Un mutex in scrittura, che viene utilizzato per fare il lock durante la creazione e scrittura di un messaggio su un canale
+- Un mutex in lettura, che viene lockato in attesa di una risposta da redis quando si tenta di legggere un messaggio dal canale.  
 
+Si è deciso di dividere le operazioni tra due mutex per questione di efficienza, così che mentre un attore è in attesa di un messaggio, possa continuare a fare altre operazioni in scrittura per aggiornare il suo stato agli occhi degli altri attori (nel nostro caso, torna utile per ridurre i tempi di attesa di risposta tra la torre ed i droni)
 ## La classe Message
-La classe Message è una classe rappresentante un messaggio da inviare/ricevuto.
+La classe Message è una classe rappresentante un messaggio di un canale.
 ### Costruttori
 I costruttori della classe Message sono due:
 #### Message(std::string id)
@@ -84,13 +86,44 @@ ___
 
 |Classe|Tipo|Parametri|Info|
 |:---|:---|:---|:--|
-|PingMessage|0|nessuno|Messaggio di Ping|
-|AssociateMessage|1|drone_id:int|Messagio di associazione drone<->torre|
+|AssociateMessage|0|drone_id:int|Messagio di associazione drone<->torre|
+|PingMessage|1|nessuno|Messaggio di Ping|
 |DroneInfoMessage|2|{params}|Scambio parametri drone->torre|
-|LocationMessage|3|x:int,y:int|Nuova posizione per drone dalla torre|
+|LocationMessage|3|x:int,y:int,movement_type:int|Nuova posizione per drone dalla torre|
+|RetireMessage|4|nessuno|Drone con batteria scarica. Rientro necessario|
+|DisconnectMessage|5|nessuno|Disconnette l'associazione drone<->torre|
 
 </table>
 
-> **DA AGGIUNGERE:**
-> - Messaggio di Rientro: Drone con batteria scarica deve rientrate
-> - **Verificare Altro**
+#### AssociateMessage
+Messaggio inviato dal drone alla torre per richiedere l'associazione al pool di droni.
+La torre risponde, ritornando l'id che associerà al drone per riconoscimento all'interno della formazione.\
+Il messaggio presenta il campo **drone_id**, che rappresenta l'id temporaneo de drone in richiesta, oppure l'id associato dalla torre in caso di associazione effettuata.
+#### PingMessage
+Messaggio inviato dalla torre al drone per verificarne l'esistenza.
+Viene generalmente utilizzato quando la torre non riceve update dal drone per più di 2 minuti.\
+Questo messaggio non presenta parametri.
+#### DroneInfoMessage
+Messagio per aggiornare le info di un drone all'interno del db della torre.
+Viene generalmente mandato dalla torre al drone, per richiedere un update dello stato del drone e verificarne il funzionamento.\
+I parametri del messaggio sono i campi del drone:
+- **drone_id**
+- **x**
+- **y**
+- **drone_state**
+- **battery_life**
+- **battery_autonomy**
+#### LocationMessage
+Messaggio con duplice scopo:
+- Se inviato dalla torre al drone, significa che la torre sta impostando delle nuove coordinate da raggiungere al drone. Dunque, in lettura il drone aggiornerà le coordinate e deciderà cosa fare di conseguenza.
+- Se inviato dal drone alla torre, rappresenta un update della posizione del drone, il quale ha completato il movimento assegnatogli in precedenza.
+
+Il messaggio presenta i seguenti parametri:
+- **x**: La posizione sull'asse x
+- **y**: La posizione sull'asse y
+- **type**: Il tipo di movimento da effettuare. Distingue se il drone ha bisogno di effettuare movimenti rapidi, per giungere ad una casella di controllo, oppure movimenti lenti per monitorare la zona.
+#### RetireMessage
+Messaggio inviato dal drone per notificare la necessità di rientro per low battery.\
+In questo caso, la torre invia al drone un LocationMessage con le coordinate precise della torre, e lo mette in stato **retiring** per ottimizzare il percorso di rientro.
+#### DisconnectMessage
+Messaggio che rimuove l'associazione tra la torre ed il drone. Permette di liberare risorse su redis e sul database.
