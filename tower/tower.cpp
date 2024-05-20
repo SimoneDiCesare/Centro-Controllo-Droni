@@ -123,14 +123,8 @@ std::vector<Drone> Tower::getDrones() {
 
 void Tower::calcolateDronePath(Drone drone) {
     // Add algorithm
-    // For now pick a random x, y movements
-    std::vector<std::tuple<int, int>> locations;
-    int locationCount = rand() % 5; // Max 5 locations
+    // For now pick a random x, y movement
     // (0, 0) is the upper-left corner.
-    // Faulty algorithm > doesn't check bounds
-    int xPos = drone.posX;
-    int yPos = drone.posY;
-    char c = rand() % 2 == 0? 'x' : 'y';
     int xAmount = rand() % this->areaWidth;
     int yAmount = rand() % this->areaHeight;
     // Send Location Message
@@ -273,7 +267,16 @@ void Tower::handleAssociation(AssociateMessage *message) {
     long long messageId = generateMessageId();
     AssociateMessage *m = new AssociateMessage(messageId, validId);
     this->channel->sendMessageTo(id, m);
+    messageId = generateMessageId();
+    LocationMessage *location = new LocationMessage(messageId);
+    int xAmount = rand() % this->areaWidth;
+    int yAmount = rand() % this->areaHeight;
+    location->setLocation(xAmount, yAmount);
+    // TODO: Create Enum
+    location->setMovementType(0); // O is for diagonal movements
+    this->channel->sendMessageTo(validId, location);
     delete m;
+    delete location;
 }
 
 void Tower::handleInfoMessage(DroneInfoMessage *message) {

@@ -67,14 +67,6 @@ bool Postgre::isConnected() {
 
 void Postgre::disconnect() {
     if (this->conn != nullptr) {
-#ifdef PQXX_MAJOR_VERSION
-    #if PQXX_MAJOR_VERSION < 7
-        this->conn.disconnect();
-    #else
-        this->conn.close();
-    #endif
-#else
-    this->conn->close(); // Use latest version anyway
-#endif
+        this->conn->close();
     }
 }
