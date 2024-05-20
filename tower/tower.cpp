@@ -41,6 +41,8 @@ Tower::Tower() : messageCounterLock() {
     // Initialize Area
     this->areaWidth = 100;
     this->areaHeight = 100;
+    this->x = this->areaWidth / 2;
+    this->y = this->areaHeight / 2;
     logi("Initializing Area");
     this->area = std::vector<std::vector<int>>();
     this->area.resize(this->areaWidth, std::vector<int>(this->areaHeight, 0));
@@ -130,6 +132,7 @@ void Tower::calcolateDronePath(Drone drone) {
     // Send Location Message
     LocationMessage *message = new LocationMessage(this->generateMessageId());
     message->setLocation(xAmount, yAmount);
+    message->setMovementType(1); // Axis Movement
     this->channel->sendMessageTo(drone.id, message);
     PostgreResult result = this->db->execute("UPDATE drone SET dstate = 'monitoring', last_update = " + CURRENT_TIMESTAMP + " WHERE id = " + std::to_string(drone.id));
     if (result.error) {
@@ -298,6 +301,23 @@ void Tower::handleLocationMessage(LocationMessage *message) {
     calcolateDronePath(drone);
 }
 
+void Tower::handleRetireMessage(RetireMessage* message) {
+    long long droneId = message->getChannelId();
+    Drone drone = this->getDrone(droneId);
+    this->area[drone.posX][drone.posY] = 0;
+    logi("Drone " + std::to_string(droneId) + " retiring");
+    // TODO: Update to real drone position
+    PostgreResult result = this->db->execute("UPDATE drone SET x = 0 ,y = 0, last_update = " + CURRENT_TIMESTAMP + " WHERE id = " + std::to_string(droneId));
+    if (result.error) {
+        logError("DB", result.errorMessage);
+    }
+    LocationMessage *loc = new LocationMessage(generateMessageId());
+    loc->setLocation(this->x, this->y);
+    loc->setMovementType(0);
+    this->channel->sendMessageTo(drone.id, loc);
+    delete loc;
+}
+
 void Tower::handleMessage(Message* message) {
     if (message == nullptr) {
         return;
@@ -305,22 +325,29 @@ void Tower::handleMessage(Message* message) {
     int type = message->getType();
     switch (type) {
         case 0: {
-            this->handlePing(dynamic_cast<PingMessage*>(message));
+            this->handleAssociation(dynamic_cast<AssociateMessage*>(message));
             break;
         }
         case 1: {
-            this->handleAssociation(dynamic_cast<AssociateMessage*>(message));
+            this->handlePing(dynamic_cast<PingMessage*>(message));
             break;
         }
         case 2: {
             this->handleInfoMessage(dynamic_cast<DroneInfoMessage*>(message));
             break;
         }
-        case 4: {
+        case 3: {
             this->handleLocationMessage(dynamic_cast<LocationMessage*>(message));
             break;
         }
-        case 3: // PathMessagge
+        case 4: {
+            this->handleRetireMessage(dynamic_cast<RetireMessage*>(message));
+            break;
+        }
+        case 5: {
+            this->handleDisconnection(dynamic_cast<DisconnectMessage*>(message));
+            break;
+        }
         default: {
             loge("Invalid message type received: " + std::to_string(type));
             break;

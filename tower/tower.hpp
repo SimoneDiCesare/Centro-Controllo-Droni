@@ -40,12 +40,16 @@ class Tower {
         void handleAssociation(AssociateMessage*);
         void handleInfoMessage(DroneInfoMessage*);
         void handleLocationMessage(LocationMessage*);
+        void handleRetireMessage(RetireMessage*);
+        void handleDisconnection(DisconnectMessage*);
         // Params
         Channel* channel;
         Postgre* db;
         long long messageCounter;
         std::mutex messageCounterLock;
         // Area
+        int x;
+        int y;
         int areaWidth;
         int areaHeight;
         std::vector<std::vector<int>> area;
