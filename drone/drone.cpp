@@ -8,6 +8,7 @@
 #include <sys/time.h>
 #include "time.hpp"
 #include "log.hpp"
+#include <cmath>
 
 // Drone class
 
@@ -49,12 +50,15 @@ Drone::Drone(long long id) : messageCounterLock() {
     this->id = id;
     this->posX = 0;
     this->posY = 0;
-    this->batteryAutonomy = std::chrono::seconds(0);
-    this->batteryLife = std::chrono::seconds(0);
+    this->batteryAutonomy = 1800;
+    this->batteryLife = 1800;
     this->state = DroneState::WAITING;
     this->channel = nullptr;
     this->running = false;
     this->messageCounter = 0;
+    this->destX = 0;
+    this->destY = 0;
+    this->velocity = 0;
 }
 
 Drone::~Drone() {
@@ -119,6 +123,9 @@ void Drone::start() {
         return;
     }
     logi("Connected to tower");
+    
+    std::thread moveThread(&Drone::movement, this);
+
     // Start loop
     std::vector<std::thread> threads;
     this->running = true;
@@ -147,13 +154,78 @@ void Drone::start() {
     // TODO: Implement disconnect logic
 }
 
-// What are (x, y)? Target position? Consider a step approach
+void Drone::movement(){
+    long long lastTime = Time::nanos();
+    long long nowTime = Time::nanos();
+    bool sendMessage = false;
+
+    while(true){
+        if (this->destX != this->posX || this->destY != this->posY){
+            sendMessage = false;
+            nowTime = Time::nanos();
+            
+
+            //controlla se riesci a tornare alla torre
+            float dist = std::sqrt((this->posX - 150)*(this->posX - 150) + (this->posY - 150)*(this->posY - 150)) * 20;
+            float metriSec = this->velocity / 3.6;
+            float percorsoDisp = this->batteryAutonomy * metriSec;
+            
+            if (dist < percorsoDisp){
+                long long delta = (nowTime - lastTime) * 1000;
+                if(this->posX == this->destX){
+                    long long dX = delta * metriSec;
+                    if (this->destX < this->posX + dX){
+                        this->posX = this->destX;
+                    } else {
+                        this->posX = this->posX + dX;
+                    }
+                }else if (this->posY == this->destY){
+                    long long delta = (nowTime - lastTime) * 1000;
+                    if(this->posY == this->destY){
+                        long long dY = delta * metriSec;
+                        if (this->destY < this->posY + dY){
+                            this->posY = this->destY;
+                        }else{
+                            this->posY = this->posY + dY;
+                        }
+                    }
+                }else{
+                    long long delta = (nowTime - lastTime) * 1000;
+                    long long arcTang = std::atan((this->posY - this->destY) / (this->posX - this->destX));
+                    long long speedX = std::cos(arcTang);
+                    long long speedY = std::sin(arcTang);
+
+                    long long dX = speedX * delta;
+                    long long dY = speedY * delta;
+
+                    if(this->destX < this->posX + dX || this->destY < this->posY + dY ){
+                        this->posX = this->destX;
+                        this->posY = this->destY;
+                    }else{
+                        this->posX = this->posX + dX;
+                        this->posY = this->posY + dY;
+                    }
+                }
+            }else{
+                RetireMessage  *message = new RetireMessage(this->generateMessageId());
+                this->channel->sendMessageTo(0, message);
+                this->destX = 150;
+                this->destY = 150;
+            }
+        }else{
+            sendMessage = true;
+            LocationMessage *locMessage = new LocationMessage(this->generateMessageId());
+            locMessage->setLocation(this->posX , this->posY);
+            this->channel->sendMessageTo(0, locMessage);
+        }
+        lastTime = nowTime;
+    }
+}
+
 void Drone::moveTo(int x, int y) {
-    // Movement logic
-    this->posX = x;
-    this->posY = y;
-    // Check logic behind this
     this->accelerate(30);
+    this->destX = x * 20;
+    this->destY = y * 20;
 }
 
 // Logically valid? Consider a step approach
@@ -183,10 +255,8 @@ void Drone::handleMessage(Message *message) {
             logi("Drone Info Message");
             DroneInfoMessage *inf = new DroneInfoMessage(generateMessageId());
             inf->setDroneId(id);
-            long long batAut = batteryAutonomy.count();
-            inf->setBatteryAutonomy(batAut);
-            long long batLife = batteryLife.count();
-            inf->setBatteryLife(batLife);
+            inf->setBatteryAutonomy(batteryAutonomy);
+            inf->setBatteryLife(batteryLife);
             inf->setDroneId(id);
             inf->setPosX(posX);
             inf->setPosY(posY);
@@ -197,8 +267,11 @@ void Drone::handleMessage(Message *message) {
         case 3: {
             // chiedere 
             logi("Location Message");
-            LocationMessage *loc = new LocationMessage(generateMessageId());
-            this->channel->sendMessageTo(id, loc);
+            LocationMessage *locMes = dynamic_cast<LocationMessage*>(message);
+            moveTo(locMes->getX() , locMes->getY());
+
+            //LocationMessage *loc = new LocationMessage(generateMessageId());
+            //this->channel->sendMessageTo(id, loc);
             break;
         }
         // case 4: La torre non deve mandare un RetireMessage
@@ -231,11 +304,11 @@ void Drone::setPosY(int posY) {
     this->posY = posY;
 }
 
-void Drone::setBatteryAutonomy(std::chrono::seconds batteryAutonomy) {
+void Drone::setBatteryAutonomy(long long batteryAutonomy) {
     this->batteryAutonomy = batteryAutonomy;
 }
 
-void Drone::setBatteryLife(std::chrono::seconds batteryLife) {
+void Drone::setBatteryLife(long long batteryLife) {
     this->batteryLife = batteryLife;
 }
 
@@ -257,11 +330,11 @@ int Drone::getPosY() {
     return this->posY;
 }
 
-std::chrono::seconds Drone::getBatteryAutonomy() {
+long long Drone::getBatteryAutonomy() {
     return this->batteryAutonomy;
 }
 
-std::chrono::seconds Drone::getBatteryLife() {
+long long Drone::getBatteryLife() {
     return this->batteryLife;
 }
 

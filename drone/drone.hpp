@@ -36,18 +36,19 @@ class Drone {
         void moveTo(int x, int y);
         void accelerate(int amount);
         void handleMessage(Message*);
+        void movement();
         // Setter
         void setPosX(int posX);
         void setPosY(int posY);
-        void setBatteryAutonomy(std::chrono::seconds batteryAutonomy);
-        void setBatteryLife(std::chrono::seconds batteryLife);
+        void setBatteryAutonomy(long long batteryAutonomy);
+        void setBatteryLife(long long batteryLife);
         void setState(DroneState state);
         // Getter
         long long getId();
         int getPosX();
         int getPosY();
-        std::chrono::seconds getBatteryAutonomy();
-        std::chrono::seconds getBatteryLife();
+        long long getBatteryAutonomy();
+        long long getBatteryLife();
         DroneState getState();
         int getRangeOfAction();
         int getVelocity();
@@ -58,11 +59,13 @@ class Drone {
         long long messageCounter;
         std::mutex messageCounterLock;
         // Drone infos
+        int destX;
+        int destY;
         long long id;
         int posX;
         int posY;
-        std::chrono::seconds batteryAutonomy;
-        std::chrono::seconds batteryLife;
+        long long batteryAutonomy;
+        long long batteryLife;
         DroneState state;
         int rangeOfAction; // Useful? => Constant can handle this?
         int velocity; // Useful? => Costant for semplicity?
