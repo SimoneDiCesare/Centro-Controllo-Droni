@@ -1,0 +1,87 @@
+\documentclass[a4paper, 12pt]{report}
+\usepackage[dvipsnames]{xcolor}
+\usepackage{graphicx} % Required for inserting images
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{tikz,lipsum,lmodern}
+\usepackage[most]{tcolorbox}
+\usepackage{pgfplots}
+\usepackage{tabularx}
+\usepackage{stmaryrd}
+\usepackage{tikz} 
+\usepackage{imakeidx}
+\usepackage{blindtext}
+\usepackage{hyperref}
+\usepackage[rightcaption]{sidecap}
+\usepackage{wrapfig}
+\usepackage{cancel}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=black,
+    filecolor=magenta,      
+    urlcolor=blue,
+    pdftitle={Relazione progetto e-commerce},
+    pdfpagemode=FullScreen,
+}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{5pt}
+
+
+\makeindex[columns=3, title=Alphabetical Index, intoc]
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue!50!green,
+    filecolor=magenta,      
+    urlcolor=cyan,
+    pdftitle={Overleaf Example},
+    pdfpagemode=FullScreen,
+    }
+
+\newcommand\scalemath[2]{\scalebox{#1}{\mbox{\ensuremath{\displaystyle #2}}}}
+\definecolor{bananamania}{rgb}{0.98, 0.91, 0.71}
+\definecolor{amaranth}{rgb}{0.9, 0.17, 0.31}
+\definecolor{amethyst}{rgb}{0.6, 0.4, 0.8}
+\definecolor{darktangerine}{rgb}{1.0, 0.66, 0.07}
+\definecolor{cerise}{rgb}{0.87, 0.19, 0.39}
+\definecolor{babyblue}{rgb}{0.54, 0.81, 0.94}
+
+
+\title{Relazione su \\
+Controllo formazione droni}
+\author{P. Bettoni (1998044),\\ A. Coppola (2003964),\\S. Di Cesare (1938649)}
+\date{\today}
+
+\begin{document}
+\maketitle
+\newpage
+\tableofcontents
+\newpage
+\chapter*{Descrizione Generale}
+Si vuole progettare un sistema di controllo di n droni che sorvegli una data area chiusa.
+
+Il sistema gestisce una torre di controllo e ricarica, dalla quale i droni devono partire e devono tornare per ricaricarsi. 
+I droni una volta connessi alla torre, seguono le sue indicazioni e si dirigono verso ogni punto gli venga assegnato dalla torre.
+I droni seguono un sistema di volo "a tappe", in cui la torre invia loro una posizione indicata con delle coordinate cartesiane
+relative alla dimensione dell'area da sorvegliare. Una volta che il drone arriva alla posizione ricevuta lo comunica alla torre che risponde con la posizione successiva, delineando così un percorso.
+Quando il drone è scarico lo comunica alla torre e si direziona alla torre di controllo, per essere ricaricato.
+
+Sta alla torre quindi il compito di calcolare, mentre i droni sono in volo, il percorso migliore per far sì che ogni punto dell'area venga sorvegliato 
+il più frequentemente possibile, tenendo conto dei punti visitati, dei droni in volo, e dei punti che visitano prima di scaricarsi.
+
+\section*{Idea dell'algoritmo}
+Contando di avere un database che contiene per ogni drone:
+\begin{enumerate}
+    \item posizione
+    \item stato
+\end{enumerate}
+
+un drone può trovarsi in solo $n$ stati:
+\begin{enumerate}
+    \item \textbf{Ready}: il drone è carico e si trova alla posizione di 
+\end{enumerate}
+
+
+
+\end{document}
