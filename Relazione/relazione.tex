@@ -50,7 +50,7 @@
 
 \title{Relazione su \\
 Controllo formazione droni}
-\author{P. Bettoni (1998044),\\ A. Coppola (2003964),\\S. Di Cesare (1938649)}
+\author{A. Bettoni (1998044),\\ A. Coppola (2003964),\\S. Di Cesare (1938649)}
 \date{\today}
 
 \begin{document}
@@ -58,7 +58,7 @@ Controllo formazione droni}
 \newpage
 \tableofcontents
 \newpage
-\chapter*{Descrizione Generale}
+\chapter{Descrizione Generale}
 Si vuole progettare un sistema di controllo di n droni che sorvegli una data area chiusa.
 
 Il sistema gestisce una torre di controllo e ricarica, dalla quale i droni devono partire e devono tornare per ricaricarsi. 
@@ -70,7 +70,7 @@ Quando il drone è scarico lo comunica alla torre e si direziona alla torre di c
 Sta alla torre quindi il compito di calcolare, mentre i droni sono in volo, il percorso migliore per far sì che ogni punto dell'area venga sorvegliato 
 il più frequentemente possibile, tenendo conto dei punti visitati, dei droni in volo, e dei punti che visitano prima di scaricarsi.
 
-\section*{Idea dell'algoritmo}
+\section{Idea dell'algoritmo}
 Contando di avere un database che contiene per ogni drone:
 \begin{enumerate}
     \item posizione
@@ -79,7 +79,10 @@ Contando di avere un database che contiene per ogni drone:
 
 un drone può trovarsi in solo $n$ stati:
 \begin{enumerate}
-    \item \textbf{Ready}: il drone è carico e si trova alla posizione di 
+    \item \textbf{Ready:} il drone è carico e si trova nella torre di controllo (è pronto a partire)
+    \item \textbf{Starting:} il drone si sta posizionando verso il punto di partenza assegnatogli dalla torre di controllo
+    \item \textbf{Flying:} il drone sta scansionando l'area che gli è stata assegnata seguendo i punti inviati dalla torre
+    \item \textbf{Returning:} la carica del drone è sufficiente solo per il suo rientro 
 \end{enumerate}
 
 
