@@ -170,25 +170,44 @@ void Drone::movement(){
             float metriSec = this->velocity / 3.6;
             float percorsoDisp = this->batteryAutonomy * metriSec;
             
-            if (dist < percorsoDisp){
+            if (dist + 1 <= percorsoDisp){
                 long long delta = (nowTime - lastTime) * 1000;
+                this->batteryAutonomy -= delta;
+
                 if(this->posX == this->destX){
-                    long long dX = delta * metriSec;
+                    int upDown;
+                    if(destX > posX){
+                        upDown = 1;
+                    }else{
+                        upDown = -1;
+                    }
+
+                    long long dX = delta * metriSec * upDown;
                     if (this->destX < this->posX + dX){
                         this->posX = this->destX;
                     } else {
                         this->posX = this->posX + dX;
                     }
+
                 }else if (this->posY == this->destY){
                     long long delta = (nowTime - lastTime) * 1000;
+                    
+                    int upDown;
+                    if(destY > posY){
+                        upDown = 1;
+                    }else{
+                        upDown = -1;
+                    }
+
                     if(this->posY == this->destY){
-                        long long dY = delta * metriSec;
+                        long long dY = delta * metriSec * upDown;
                         if (this->destY < this->posY + dY){
                             this->posY = this->destY;
                         }else{
                             this->posY = this->posY + dY;
                         }
                     }
+
                 }else{
                     long long delta = (nowTime - lastTime) * 1000;
                     long long arcTang = std::atan((this->posY - this->destY) / (this->posX - this->destX));
@@ -206,6 +225,7 @@ void Drone::movement(){
                         this->posY = this->posY + dY;
                     }
                 }
+
             }else{
                 RetireMessage  *message = new RetireMessage(this->generateMessageId());
                 this->channel->sendMessageTo(0, message);
