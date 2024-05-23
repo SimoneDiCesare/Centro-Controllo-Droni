@@ -318,6 +318,10 @@ void Tower::handleRetireMessage(RetireMessage* message) {
     delete loc;
 }
 
+void Tower::handleDisconnection(DisconnectMessage* message) {
+    logi("Drone " + std::to_string(message->getChannelId()) + " disconnecting");
+}
+
 void Tower::handleMessage(Message* message) {
     if (message == nullptr) {
         return;
