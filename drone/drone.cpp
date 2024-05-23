@@ -8,6 +8,7 @@
 #include <sys/time.h>
 #include "time.hpp"
 #include "log.hpp"
+#include "globals.hpp"
 #include <cmath>
 
 // Drone class

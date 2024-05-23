@@ -3,6 +3,7 @@
 #include "channel.hpp"
 #include "postgresql.hpp"
 #include "area.hpp"
+#include "globals.hpp"
 #include <vector>
 #include <mutex>
 #include <string>
@@ -19,7 +20,7 @@ typedef struct Drone {
     int posY;
     std::chrono::seconds batteryAutonomy;
     std::chrono::seconds batteryLife;
-    std::string droneState;
+    DroneState droneState;
     std::chrono::seconds lastUpdate;
 } Drone;
 

@@ -3,6 +3,7 @@
 #include "postgresql.hpp"
 #include "log.hpp"
 #include "time.hpp"
+#include "globals.hpp"
 #include <iostream>
 #include <csignal>
 #include <cstdlib>
@@ -79,7 +80,7 @@ bool Tower::connectDb(const PostgreArgs args) {
         y INTEGER NOT NULL,
         battery_autonomy BIGINT,
         battery_life BIGINT,
-        dstate DSTATE,
+        dstate INT,
         last_update BIGINT
         ))");
         // CHECK(id > 0)
@@ -115,7 +116,7 @@ std::vector<Drone> Tower::getDrones() {
         d.posY = row[2].as<int>();
         d.batteryAutonomy = std::chrono::seconds(row[3].as<long long>());
         d.batteryLife = std::chrono::seconds(row[4].as<long long>());
-        d.droneState = row[5].as<std::string>();
+        d.droneState = static_cast<DroneState>(row[5].as<int>());
         d.lastUpdate = std::chrono::seconds(row[6].as<long long>());
         drones.push_back(d);
     }
@@ -134,7 +135,7 @@ void Tower::calcolateDronePath(Drone drone) {
     message->setLocation(xAmount, yAmount);
     message->setMovementType(1); // Axis Movement
     this->channel->sendMessageTo(drone.id, message);
-    PostgreResult result = this->db->execute("UPDATE drone SET dstate = 'monitoring', last_update = " + CURRENT_TIMESTAMP + " WHERE id = " + std::to_string(drone.id));
+    PostgreResult result = this->db->execute("UPDATE drone SET dstate = " + std::to_string(MONITORING) + ", last_update = " + CURRENT_TIMESTAMP + " WHERE id = " + std::to_string(drone.id));
     if (result.error) {
         logError("DB", result.errorMessage);
     }
@@ -151,7 +152,7 @@ Drone Tower::getDrone(long long id) {
             drone.posY = row[2].as<int>();
             drone.batteryAutonomy = std::chrono::seconds(row[3].as<long long>());
             drone.batteryLife = std::chrono::seconds(row[4].as<long long>());
-            drone.droneState = row[5].as<std::string>();
+            drone.droneState = static_cast<DroneState>(row[5].as<int>());
             drone.lastUpdate = std::chrono::seconds(row[6].as<long long>());
         }
     }
@@ -165,7 +166,7 @@ void Tower::checkDrones() {
     for (const Drone& drone : drones) {
         timePassed = std::chrono::duration_cast<std::chrono::seconds>(currentTime.time_since_epoch()) - drone.lastUpdate;
         logi("Time Passed: " + std::to_string(timePassed.count()));
-        if (drone.droneState.compare("waiting") == 0) {
+        /*if (drone.droneState.compare("waiting") == 0) {
             logi("Sending drone to monitoring");
             this->calcolateDronePath(drone);
         } else if (drone.droneState.compare("monitoring") == 0) {
@@ -177,7 +178,7 @@ void Tower::checkDrones() {
             }
         } else { // Charging Drone -> request for battery update
             logi("Checking drone with state: " + drone.droneState);
-        }
+        }*/
     }
 }
 

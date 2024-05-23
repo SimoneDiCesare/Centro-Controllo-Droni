@@ -4,6 +4,7 @@
 #include <chrono>
 #include <mutex>
 #include "channel.hpp"
+#include "globals.hpp"
 
 //Coordinate XY -> PosX e PosY
 //Stato InRicarica / InAzione -> Stt 
@@ -16,12 +17,6 @@
 
 //[tempo][tipo mersaggio*][chi][a chi(opzionale)][cosa fa]
 //*ex mesaggio errore o di info
-
-enum DroneState {
-    WAITING,
-    CHARGING,
-    MONITORING
-};
 
 class Drone {
     public:
