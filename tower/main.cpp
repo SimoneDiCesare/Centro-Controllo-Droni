@@ -9,10 +9,6 @@
 
 // TODO: - Argument parsing
 int main(int argc, char* argv[]) {
-    Area a(127, 312);
-    a.initArea(1513, 64, 156);
-    std::cout << a.toString() << "\n";
-    return 0;
     logVerbose(true);
     logOpen("tower.log");
     for (int i = 0; i < argc; i++) {
