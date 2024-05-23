@@ -3,7 +3,7 @@ CC = gcc
 CCFLAGS_D = -g -O0 -Iutils -Ipostgresql -Iredis
 CCFLAGS = -O2 -Iutils -Ipostgresql -Iredis
 # Libs
-LIBS = -lstdc++
+LIBS = -lstdc++ -lm
 POSTGRESQL_LIBS = -lpqxx -lpq
 # Directories
 BIN_DIR := bin

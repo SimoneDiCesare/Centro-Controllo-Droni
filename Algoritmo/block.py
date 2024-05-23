@@ -5,6 +5,7 @@ class Block:
     def __init__(self, ul, dr, origin):
         self.up_left = ul
         self.down_right = dr
+        # Punto più lontano dalla torre
         self.start = mt.farther(ul, dr, origin)
         self.lastvisit = self.start
 

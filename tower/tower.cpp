@@ -39,13 +39,13 @@ Tower::Tower() : messageCounterLock() {
     this->db = nullptr;
     this->messageCounter = 0;
     // Initialize Area
-    this->areaWidth = 100;
-    this->areaHeight = 100;
+    logi("Initializing Area");
+    this->areaWidth = 10;
+    this->areaHeight = 10;
+    this->area = new Area(this->areaWidth, this->areaHeight);
     this->x = this->areaWidth / 2;
     this->y = this->areaHeight / 2;
-    logi("Initializing Area");
-    this->area = std::vector<std::vector<int>>();
-    this->area.resize(this->areaWidth, std::vector<int>(this->areaHeight, 0));
+    this->area->initArea(128, this->x, this->y);
     logi("Tower Initialized");
 }
 
@@ -304,6 +304,7 @@ void Tower::handleLocationMessage(LocationMessage *message) {
 void Tower::handleRetireMessage(RetireMessage* message) {
     long long droneId = message->getChannelId();
     Drone drone = this->getDrone(droneId);
+    this->area[drone.posX];
     this->area[drone.posX][drone.posY] = 0;
     logi("Drone " + std::to_string(droneId) + " retiring");
     // TODO: Update to real drone position

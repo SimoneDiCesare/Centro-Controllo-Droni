@@ -2,6 +2,7 @@
 #define TOWER_HPP
 #include "channel.hpp"
 #include "postgresql.hpp"
+#include "area.hpp"
 #include <vector>
 #include <mutex>
 #include <string>
@@ -100,11 +101,11 @@ class Tower {
         long long messageCounter;
         std::mutex messageCounterLock;
         // Area
+        Area *area;
         int x;
         int y;
         int areaWidth;
         int areaHeight;
-        std::vector<std::vector<int>> area;
 };
 
 #endif // TOWER_HPP
