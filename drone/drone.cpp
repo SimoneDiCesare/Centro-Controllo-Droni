@@ -48,6 +48,7 @@ Drone::Drone() : Drone(Drone::createId()){
 }
 
 Drone::Drone(long long id) : messageCounterLock(), destinationLock(), positionLock() {
+    this->state = WAITING;
     this->id = id;
     this->posX = 0;
     this->posY = 0;
