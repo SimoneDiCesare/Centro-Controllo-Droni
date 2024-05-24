@@ -11,6 +11,10 @@ int main(int argc, char* argv[]){
         logInfo("Init", std::to_string(i) + ") " + std::string(argv[i]));
     }
     Drone drone;
+    drone.moveTo(300, 300);
+    drone.behaviourLoop();
+    return 0;
+    
     bool connected = drone.connectChannel("127.0.0.1", 6379);
     if (!connected) {
         logError("Init", "Can't start process without redis connection!");

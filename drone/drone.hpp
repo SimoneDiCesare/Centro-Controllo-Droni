@@ -30,17 +30,20 @@ class Drone {
         void start();
         void moveTo(int x, int y);
         void handleMessage(Message*);
-        void movement();
+        void axisMovement(double delta, int& pos, int& dest);
+        void move(double delta);
+        void moveDiagonal(double delta);
+        void behaviourLoop();
         // Setter
-        void setPosX(int posX);
-        void setPosY(int posY);
+        void setPosX(double posX);
+        void setPosY(double posY);
         void setBatteryAutonomy(long long batteryAutonomy);
         void setBatteryLife(long long batteryLife);
         void setState(DroneState state);
         // Getter
         long long getId();
-        int getPosX();
-        int getPosY();
+        double getPosX();
+        double getPosY();
         long long getBatteryAutonomy();
         long long getBatteryLife();
         DroneState getState();
@@ -58,8 +61,8 @@ class Drone {
         int destY;
         long long id;
         std::mutex positionLock;
-        int posX;
-        int posY;
+        double posX;
+        double posY;
         int towerX;
         int towerY;
         long long batteryAutonomy;
