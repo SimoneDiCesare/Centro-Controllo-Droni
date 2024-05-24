@@ -4,7 +4,8 @@
 enum DroneState {
     WAITING,
     CHARGING,
-    MONITORING
+    MONITORING,
+    RETURNING
 };
 
 #endif

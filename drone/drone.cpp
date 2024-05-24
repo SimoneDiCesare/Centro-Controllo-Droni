@@ -51,8 +51,8 @@ Drone::Drone(long long id) : messageCounterLock(), destinationLock(), positionLo
     this->id = id;
     this->posX = 0;
     this->posY = 0;
-    this->batteryAutonomy = 1800;
-    this->batteryLife = 1800;
+    this->batteryAutonomy = randomBattery();
+    this->batteryLife = this->batteryAutonomy;
     this->state = DroneState::WAITING;
     this->channel = nullptr;
     this->running = false;
@@ -186,18 +186,26 @@ void Drone::movement(){
          * stato di monitoring. Fai un check, ed in caso deve muoversi (monitoring o
          * di rientro) allora prosegui con il check sulla destinazione
          */
-        if (destX != posX || destY != posY) {
+        if (destX != posX || destY != posY && (getState() != CHARGING || getState() != WAITING)) {
             logi("Moving to (" + std::to_string(destX) + "," + std::to_string(destY) + ")");
+            
+            setState(MONITORING);
             sendMessage = true;
             nowTime = Time::nanos();
+            
             // Check on battery level
             float dist = std::sqrt((posX - this->towerX) * (posX - this->towerX) + (posY - this->towerY) * (posY - this->towerY));
             float margin = 1 * 20; // Blocks of Margin
             float mPerSec = this->velocity / 3.6;
             float availableMeters = this->batteryAutonomy * mPerSec;
-            if (dist + margin <= availableMeters) {
+
+            if (dist + margin <= availableMeters && getState() != RETURNING) {
                 long long delta = (nowTime - lastTime) * 1000;
                 this->batteryAutonomy -= delta;
+
+                if (sendMessage = false){
+                    sendMessage = true;
+                }
                 /**
                  * Perché controlli se posX = destX, e poi controlli se posX < | > destX?
                  * lo fai anche per le Y. Ricontrolla bene la logica dietro i movimenti.
@@ -261,7 +269,27 @@ void Drone::movement(){
                 this->posX = posX;
                 this->posY = posY;
                 this->positionLock.unlock();
-            } else {
+
+            }else if (getState() == RETURNING) // esegue gli stessi calcoli del viaggio in diagonale
+            {
+                long long delta = (nowTime - lastTime) * 1000;
+                    long long arcTang = std::atan((posY - destY) / (posX - destX));
+                    long long speedX = std::cos(arcTang);
+                    long long speedY = std::sin(arcTang);
+                    long long dx = speedX * delta;
+                    long long dy = speedY * delta;
+                    if (destX < posX + dx) {
+                        posX = destX;
+                    } else {
+                        posX = posX + dx;
+                    }
+                    if (destY < posY + dy) {
+                        posY = destY;
+                    } else {
+                        posY = posY + dy;
+                    }
+            }
+             else {
                 /**
                  * Qui la funzione arriva ogni qualvolta che c'è bisogno di rientrare,
                  * facendo rimanere il drone immobile se ha bisogno di rientrare ed
@@ -269,6 +297,7 @@ void Drone::movement(){
                  * rientrando, e muoviti a prescindere dai metri che puoi percorrere
                  * se devi rientrare.
                  */
+                setState(RETURNING);
                 logi("Need to Retire");
                 RetireMessage *retire = new RetireMessage(this->generateMessageId());
                 this->channel->sendMessageTo(0, retire);
@@ -277,15 +306,37 @@ void Drone::movement(){
                 this->destY = this->towerY;
                 this->destinationLock.unlock();
             }
-        } else if (sendMessage) {
+        } else if (sendMessage) { // manda il mesaggio quando arriva alla posizione obbiettivo
             sendMessage = false;
             LocationMessage *location = new LocationMessage(this->generateMessageId());
             location->setLocation(posX, posY);
             this->channel->sendMessageTo(0, location);
             delete location;
+        } else if (destX == 150 == posX  && destY == 150 == posY && (getState() != CHARGING || getState() != WAITING)) {
+            setState(CHARGING);
+        }
+         else if (getState() == CHARGING) // se lo stato è in carica allora ricarica la batteria 
+        {
+            long long delta = (nowTime - lastTime) * 1000;
+            
+            if (getBatteryAutonomy() + delta > getBatteryLife())
+            {
+                setBatteryLife(this->batteryLife);
+                setState(WAITING);
+            }else{
+                setBatteryLife(this->batteryAutonomy += delta);
+            }
+            
         }
         lastTime = nowTime;
     }
+}
+
+long long Drone::randomBattery(){
+    srand(time(NULL));
+    int minuti = rand() % 31;
+    long long _ = minuti * 60;
+    return _ + 9000;
 }
 
 void Drone::moveTo(int x, int y) {

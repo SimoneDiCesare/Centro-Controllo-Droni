@@ -68,6 +68,7 @@ class Drone {
         int rangeOfAction; // Useful? => Constant can handle this?
         int velocity; // Useful? => Costant for semplicity?
         // Utility functions
+        long long randomBattery();
         static long long createId();
         void logi(std::string message);
         void loge(std::string message);
