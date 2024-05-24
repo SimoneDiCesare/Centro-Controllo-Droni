@@ -114,16 +114,38 @@ class AssociateMessage : public Message {
         */
         long long getDroneId();
         /**
+         * @brief Get tower x location.
+         * @return The tower x location.
+         */
+        int getTowerX();
+        /**
+         * @brief Get tower y location.
+         * @return The tower y location.
+         */
+        int getTowerY();
+        /**
          * @brief Get the type of this message.
          * @return 0, this message type.
          * 
          * This method overrides the getType method of the base class Message.
          * 
          * @see Message::getType()
-        */
+         */
         int getType() {return 0;};
+        /**
+         * @brief Set the x location of the tower.
+         * @param towerX The x location.
+         */
+        void setTowerX(int towerX);
+        /**
+         * @brief Set the y location of the tower.
+         * @param towerY The y location.
+         */
+        void setTowerY(int towerY);
     private:
         long long droneId; ///< The id of the drone.
+        int towerX;        ///< The x location of the tower.
+        int towerY;        ///< The y location of the tower.
 };
 
 /**

@@ -59,7 +59,7 @@ Drone::Drone(long long id) : messageCounterLock() {
     this->messageCounter = 0;
     this->destX = 0;
     this->destY = 0;
-    this->velocity = 0;
+    this->velocity = 30; // km/h
 }
 
 Drone::~Drone() {
@@ -102,6 +102,12 @@ bool Drone::connectToTower() {
             this->id = associateId;
             this->channel->setId(this->id);
         }
+        this->towerX = association->getTowerX() * 20;
+        this->towerY = association->getTowerY() * 20;
+        this->posX = this->towerX;
+        this->posY = this->towerY;
+        this->destX = this->posX;
+        this->destY = this->posY;
         // Consume message
         bool deleted = this->channel->removeMessage(association);
         if (deleted) {
@@ -158,20 +164,20 @@ void Drone::start() {
 void Drone::movement(){
     long long lastTime = Time::nanos();
     long long nowTime = Time::nanos();
-    bool sendMessage = false;
-
-    while(true){
-        if (this->destX != this->posX || this->destY != this->posY){
-            sendMessage = false;
+    bool sendMessage = true;
+    while(this->running) {
+        logi("Movement");
+        if (this->destX != this->posX || this->destY != this->posY) {
+            logi("Moving to (" + std::to_string(this->destX) + "," + std::to_string(this->destY) + ")");
+            sendMessage = true;
             nowTime = Time::nanos();
-            
-
             //controlla se riesci a tornare alla torre
-            float dist = std::sqrt((this->posX - 150)*(this->posX - 150) + (this->posY - 150)*(this->posY - 150)) * 20;
+            float dist = std::sqrt((this->posX - this->towerX)*(this->posX - this->towerX) + (this->posY - this->towerY)*(this->posY - this->towerY));
+            float margin = 1 * 20; // Blocks of margin
             float metriSec = this->velocity / 3.6;
             float percorsoDisp = this->batteryAutonomy * metriSec;
             
-            if (dist + 1 <= percorsoDisp){
+            if (dist + margin <= percorsoDisp) {
                 long long delta = (nowTime - lastTime) * 1000;
                 this->batteryAutonomy -= delta;
 
@@ -209,7 +215,7 @@ void Drone::movement(){
                         }
                     }
 
-                }else{
+                } else {
                     long long delta = (nowTime - lastTime) * 1000;
                     long long arcTang = std::atan((this->posY - this->destY) / (this->posX - this->destX));
                     long long speedX = std::cos(arcTang);
@@ -221,20 +227,21 @@ void Drone::movement(){
                     if(this->destX < this->posX + dX || this->destY < this->posY + dY ){
                         this->posX = this->destX;
                         this->posY = this->destY;
-                    }else{
+                    } else {
                         this->posX = this->posX + dX;
                         this->posY = this->posY + dY;
                     }
                 }
 
-            }else{
+            } else {
+                logi("Need to Retire");
                 RetireMessage  *message = new RetireMessage(this->generateMessageId());
                 this->channel->sendMessageTo(0, message);
-                this->destX = 150;
-                this->destY = 150;
+                this->destX = this->towerX; // TODO: Wait Tower location
+                this->destY = this->towerY;
             }
-        }else{
-            sendMessage = true;
+        } else if (sendMessage) {
+            sendMessage = false;
             LocationMessage *locMessage = new LocationMessage(this->generateMessageId());
             locMessage->setLocation(this->posX , this->posY);
             this->channel->sendMessageTo(0, locMessage);
@@ -244,14 +251,10 @@ void Drone::movement(){
 }
 
 void Drone::moveTo(int x, int y) {
-    this->accelerate(30);
     this->destX = x * 20;
     this->destY = y * 20;
-}
-
-// Logically valid? Consider a step approach
-void Drone::accelerate(int amount) {
-    this->velocity = amount;
+    this->state = MONITORING;
+    logi("Setting destination to (" + std::to_string(this->destX) + "," + std::to_string(this->destY) + ")");
 }
 
 void Drone::handleMessage(Message *message) {
@@ -269,7 +272,7 @@ void Drone::handleMessage(Message *message) {
         case 1:{
             logi("Ping!");
             PingMessage *ping = new PingMessage(generateMessageId());
-            this->channel->sendMessageTo(id, ping);
+            this->channel->sendMessageTo(0, ping);
             break;
         }
         case 2: {
@@ -282,14 +285,14 @@ void Drone::handleMessage(Message *message) {
             inf->setPosX(posX);
             inf->setPosY(posY);
             inf->setState(state);
-            this->channel->sendMessageTo(id, inf);
+            this->channel->sendMessageTo(0, inf);
             break;
         }
         case 3: {
             // chiedere 
             logi("Location Message");
             LocationMessage *locMes = dynamic_cast<LocationMessage*>(message);
-            moveTo(locMes->getX() , locMes->getY());
+            moveTo(locMes->getX(), locMes->getY());
 
             //LocationMessage *loc = new LocationMessage(generateMessageId());
             //this->channel->sendMessageTo(id, loc);

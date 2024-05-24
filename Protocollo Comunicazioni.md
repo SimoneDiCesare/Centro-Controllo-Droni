@@ -86,7 +86,7 @@ ___
 
 |Classe|Tipo|Parametri|Info|
 |:---|:---|:---|:--|
-|AssociateMessage|0|drone_id:int|Messagio di associazione drone<->torre|
+|AssociateMessage|0|drone_id:long long,x:int,y:int|Messagio di associazione drone<->torre|
 |PingMessage|1|nessuno|Messaggio di Ping|
 |DroneInfoMessage|2|{params}|Scambio parametri drone->torre|
 |LocationMessage|3|x:int,y:int,movement_type:int|Nuova posizione per drone dalla torre|
@@ -98,7 +98,8 @@ ___
 #### AssociateMessage
 Messaggio inviato dal drone alla torre per richiedere l'associazione al pool di droni.
 La torre risponde, ritornando l'id che associerà al drone per riconoscimento all'interno della formazione.\
-Il messaggio presenta il campo **drone_id**, che rappresenta l'id temporaneo de drone in richiesta, oppure l'id associato dalla torre in caso di associazione effettuata.
+Il messaggio presenta il campo **drone_id**, che rappresenta l'id temporaneo de drone in richiesta, oppure l'id associato dalla torre in caso di associazione effettuata.\
+Inoltre, il messaggio contiene la posizione della torre per gestire con precisione il punto di partenza dei droni.
 #### PingMessage
 Messaggio inviato dalla torre al drone per verificarne l'esistenza.
 Viene generalmente utilizzato quando la torre non riceve update dal drone per più di 2 minuti.\

@@ -29,7 +29,6 @@ class Drone {
         bool connectToTower();
         void start();
         void moveTo(int x, int y);
-        void accelerate(int amount);
         void handleMessage(Message*);
         void movement();
         // Setter
@@ -59,6 +58,8 @@ class Drone {
         long long id;
         int posX;
         int posY;
+        int towerX;
+        int towerY;
         long long batteryAutonomy;
         long long batteryLife;
         DroneState state;

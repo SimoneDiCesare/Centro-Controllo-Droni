@@ -18,10 +18,10 @@ typedef struct Drone {
     long long id;
     int posX;
     int posY;
-    std::chrono::seconds batteryAutonomy;
-    std::chrono::seconds batteryLife;
+    long long batteryAutonomy;
+    long long batteryLife;
     DroneState droneState;
-    std::chrono::seconds lastUpdate;
+    long long lastUpdate;
 } Drone;
 
 /**
@@ -78,6 +78,7 @@ class Tower {
          * @brief TODO
          */
         void droneCheckLoop();
+        void areaUpdateLoop();
         /**
          * @brief Retrieve drone from db with id.
          * @param id The id to find.
@@ -96,6 +97,8 @@ class Tower {
         void handleLocationMessage(LocationMessage*);
         void handleRetireMessage(RetireMessage*);
         void handleDisconnection(DisconnectMessage*);
+        // Associate Block
+        void associateBlock(Drone drone);
         // Params
         Channel* channel;
         Postgre* db;

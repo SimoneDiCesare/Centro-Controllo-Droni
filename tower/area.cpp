@@ -11,6 +11,7 @@ Block::Block(int x, int y, int width, int height) {
     this->height = height;
     this->dirX = 1;
     this->dirY = 1;
+    this->droneId = -1;
 }
 
 Block::~Block() {
@@ -32,6 +33,13 @@ void Block::orientBlock(int facingX, int facingY) {
     }
     this->dirX = (this->startX == this->x)? 1 : -1;
     this->dirY = (this->startY == this->y)? 1 : -1;
+    this->lastX = this->startX;
+    this->lastY = this->startY;
+}
+
+void Block::reset(int facingX, int facingY) {
+    this->orientBlock(facingX, facingY);
+    this->droneId = -1;
 }
 
 int Block::getX() {
@@ -74,6 +82,14 @@ int Block::getStartY() {
     return this->startY;
 }
 
+bool Block::isAssigned() {
+    return this->droneId != -1;
+}
+
+long long Block::getAssignment() {
+    return this->droneId;
+}
+
 void Block::setX(int x) {
     this-> x = x;
 }
@@ -88,6 +104,22 @@ void Block::setWidth(int width) {
 
 void Block::setHeight(int height) {
     this->height = height;
+}
+
+void Block::setLastX(int lastX) {
+    this->lastX = lastX;
+}
+
+void Block::setLastY(int lastY) {
+    this->lastY = lastY;
+}
+
+void Block::setDirX(int dirX) {
+    this->dirX = dirX;
+}
+
+void Block::assignTo(long long droneId) {
+    this->droneId = droneId;
 }
 
 std::string Block::toString() {
@@ -163,8 +195,16 @@ Area::~Area() {
     delete this->blocks;
 }
 
-int*& Area::operator[](int index) {
-    return this->matrix[index];
+int Area::getMaxIn(Block block) {
+    int max = 0;
+    for (int i = block.getX(); i < block.getX() + block.getWidth(); i++) {
+        for (int j = block.getY(); j < block.getY() + block.getHeight(); j++) {
+            if (max < this->matrix[i][j]) {
+                max = this->matrix[i][j];
+            }
+        }
+    }
+    return max;
 }
 
 std::string Area::toString() {
@@ -173,4 +213,8 @@ std::string Area::toString() {
         text = text + this->blocks->at(i).toString() + "\n";
     }
     return text + "}";
+}
+
+std::vector<Block>* Area::getBlocks() {
+    return this->blocks;
 }

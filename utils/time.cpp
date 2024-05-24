@@ -10,3 +10,8 @@ long long Time::nanos() {
     long long currentNanoseconds = nanoseconds_since_epoch;
     return currentNanoseconds;
 }
+
+long long Time::seconds() {
+    long long sec = Time::nanos() / 1e9;
+    return sec;
+}

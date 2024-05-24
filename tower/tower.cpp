@@ -114,32 +114,14 @@ std::vector<Drone> Tower::getDrones() {
         d.id = row[0].as<long long>();
         d.posX = row[1].as<int>();
         d.posY = row[2].as<int>();
-        d.batteryAutonomy = std::chrono::seconds(row[3].as<long long>());
-        d.batteryLife = std::chrono::seconds(row[4].as<long long>());
+        d.batteryAutonomy = row[3].as<long long>();
+        d.batteryLife = row[4].as<long long>();
         d.droneState = static_cast<DroneState>(row[5].as<int>());
-        d.lastUpdate = std::chrono::seconds(row[6].as<long long>());
+        d.lastUpdate = row[6].as<long long>();
         drones.push_back(d);
     }
     logi("Found: " + std::to_string(drones.size()) + " drones");
     return drones;
-}
-
-void Tower::calcolateDronePath(Drone drone) {
-    // Add algorithm
-    // For now pick a random x, y movement
-    // (0, 0) is the upper-left corner.
-    int xAmount = rand() % this->areaWidth;
-    int yAmount = rand() % this->areaHeight;
-    // Send Location Message
-    LocationMessage *message = new LocationMessage(this->generateMessageId());
-    message->setLocation(xAmount, yAmount);
-    message->setMovementType(1); // Axis Movement
-    this->channel->sendMessageTo(drone.id, message);
-    PostgreResult result = this->db->execute("UPDATE drone SET dstate = " + std::to_string(MONITORING) + ", last_update = " + CURRENT_TIMESTAMP + " WHERE id = " + std::to_string(drone.id));
-    if (result.error) {
-        logError("DB", result.errorMessage);
-    }
-    delete message;
 }
 
 Drone Tower::getDrone(long long id) {
@@ -150,10 +132,10 @@ Drone Tower::getDrone(long long id) {
             drone.id = row[0].as<long long>();
             drone.posX = row[1].as<int>();
             drone.posY = row[2].as<int>();
-            drone.batteryAutonomy = std::chrono::seconds(row[3].as<long long>());
-            drone.batteryLife = std::chrono::seconds(row[4].as<long long>());
+            drone.batteryAutonomy = row[3].as<long long>();
+            drone.batteryLife = row[4].as<long long>();
             drone.droneState = static_cast<DroneState>(row[5].as<int>());
-            drone.lastUpdate = std::chrono::seconds(row[6].as<long long>());
+            drone.lastUpdate = row[6].as<long long>();
         }
     }
     return drone;
@@ -161,11 +143,11 @@ Drone Tower::getDrone(long long id) {
 
 void Tower::checkDrones() {
     std::vector<Drone> drones = this->getDrones();
-    auto currentTime = std::chrono::system_clock::now();
-    auto timePassed = std::chrono::seconds(0);
+    long long currentTime = Time::seconds();
+    long long timePassed = 0;
     for (const Drone& drone : drones) {
-        timePassed = std::chrono::duration_cast<std::chrono::seconds>(currentTime.time_since_epoch()) - drone.lastUpdate;
-        logi("Time Passed: " + std::to_string(timePassed.count()));
+        timePassed = Time::seconds() - drone.lastUpdate;
+        logi("Last Update for D" + std::to_string(drone.id) + ": " + std::to_string(timePassed));
         /*if (drone.droneState.compare("waiting") == 0) {
             logi("Sending drone to monitoring");
             this->calcolateDronePath(drone);
@@ -183,11 +165,46 @@ void Tower::checkDrones() {
 }
 
 void Tower::droneCheckLoop() {
-    while (this->running) {
-        std::this_thread::sleep_for(std::chrono::seconds(10));
+    /*while (this->running) {
+        std::this_thread::sleep_for(std::chrono::seconds(60));
         logi("Checking Drones");
         this->checkDrones();
+    }*/
+}
+
+void Tower::areaUpdateLoop() {
+    long long start = Time::nanos();
+    // Not Thread Safe -> does not create problems
+    while (this->running) {
+        // Arbitrary 10 seconds for growing up areas
+        std::this_thread::sleep_for(std::chrono::seconds(10));
+        for (int i = 0; i < this->areaWidth; i++) {
+            for (int j = 0; j < this->areaHeight; j++) {
+                this->area->operator[](i)[j] = this->area->operator[](i)[j] + 1;
+            }
+        }
     }
+    long long end = Time::nanos();
+    // Calculate Area Media Value
+    float values = 0;
+    float min = 500;
+    float max = 0;
+    for (int i = 0; i < this->areaWidth; i++) {
+        for (int j = 0; j < this->areaHeight; j++) {
+            int v = this->area->operator[](i)[j];
+            values += v;
+            if (v < min) {
+                min = v;
+            }
+            if (v > max) {
+                max = v;
+            }
+        }
+    }
+    float avg = values / (float)(this->areaWidth * this->areaHeight);
+    float sec = (end - start) / 1e9;
+    logi("Average values: " + std::to_string(avg) + " in " + std::to_string(sec) + "s");
+    logi("Max: " + std::to_string(max) + ", Min" + std::to_string(min));
 }
 
 void Tower::start() {
@@ -195,16 +212,18 @@ void Tower::start() {
         loge("Can't start tower without a connected channel!");
         return;
     }
+    // TODO: Create Thread for updating are values
     // Register signals
     signal(SIGINT, Tower::handleSignal);
     signal(SIGTERM, Tower::handleSignal);
     this->running = true;
     std::vector<std::thread> threads;
     threads.emplace_back(&Tower::droneCheckLoop, this);
+    threads.emplace_back(&Tower::areaUpdateLoop, this);
     logi("Tower online");
     while (this->running) {
         // 1' of waiting before restarting the cycle
-        Message *message = this->channel->awaitMessage(60);
+        Message *message = this->channel->awaitMessage(10);
         if (message == nullptr) {
             // If we have no message to handle, we check last updates from drones
             // If a last update is > x second (to decide, maybe 1-5' => 60-300'') -> ping and wait a response
@@ -252,10 +271,10 @@ long long checkDroneId(Postgre* db, long long id) {
 
 void Tower::handlePing(PingMessage *message) {
     long long id = message->getChannelId();
-    // TODO: Update lastUpdate on DB;
-    PingMessage *ping = new PingMessage(generateMessageId());
-    this->channel->sendMessageTo(id, ping);
-    delete ping;
+    PostgreResult result = this->db->execute("UPDATE drone SET last_update = " + CURRENT_TIMESTAMP + " WHERE id = " + std::to_string(id));
+    if (result.error) {
+        logError("DB", result.errorMessage);
+    }
 }
 
 void Tower::handleAssociation(AssociateMessage *message) {
@@ -264,33 +283,129 @@ void Tower::handleAssociation(AssociateMessage *message) {
     long long validId = checkDroneId(db, id);
     logi("Valid Drone Id found");
     // Get drones info
-    PostgreResult result = this->db->execute("INSERT INTO drone (id, x, y, battery_autonomy, battery_life, dstate, last_update) VALUES (" + std::to_string(validId) + ", 0, 0, 0, 0, 'waiting', " + CURRENT_TIMESTAMP + ")");
+    PostgreResult result = this->db->execute("INSERT INTO drone (id, x, y, battery_autonomy, battery_life, dstate, last_update) VALUES (" + std::to_string(validId) + ", 0, 0, 0, 0, " + std::to_string(WAITING) + ", " + CURRENT_TIMESTAMP + ")");
     if (result.error) {
         logError("DB", result.errorMessage);
     }
-    long long messageId = generateMessageId();
-    AssociateMessage *m = new AssociateMessage(messageId, validId);
-    this->channel->sendMessageTo(id, m);
-    messageId = generateMessageId();
-    LocationMessage *location = new LocationMessage(messageId);
-    int xAmount = rand() % this->areaWidth;
-    int yAmount = rand() % this->areaHeight;
-    location->setLocation(xAmount, yAmount);
-    // TODO: Create Enum
-    location->setMovementType(0); // O is for diagonal movements
-    this->channel->sendMessageTo(validId, location);
-    delete m;
-    delete location;
+    // Send back Association
+    AssociateMessage *associateMessage = new AssociateMessage(generateMessageId(), validId);
+    associateMessage->setTowerX(this->x);
+    associateMessage->setTowerY(this->y);
+    this->channel->sendMessageTo(id, associateMessage);
+    // Require Infos
+    DroneInfoMessage *infoMessage = new DroneInfoMessage(generateMessageId());
+    this->channel->sendMessageTo(validId, infoMessage);
+    delete associateMessage;
+    delete infoMessage;
+}
+
+void Tower::associateBlock(Drone drone) {
+    std::vector<Block> *blocks = this->area->getBlocks();
+    int maxValue = -1;
+    int value = -1;
+    Block *blockChosen = nullptr;
+    for (Block& block : *blocks) {
+        if (block.isAssigned()) {
+            continue;
+        }
+        value = this->area->getMaxIn(block);
+        if (maxValue < value) {
+            maxValue = value;
+            blockChosen = &block;
+        }
+    }
+    if (blockChosen != nullptr) {
+        logi("Associating Block " + blockChosen->toString());
+        blockChosen->assignTo(drone.id);
+        LocationMessage *location = new LocationMessage(generateMessageId());
+        location->setLocation(blockChosen->getStartX(), blockChosen->getStartY());
+        this->channel->sendMessageTo(drone.id, location);
+        delete location;
+    } else {
+        logi("No block found for D" + std::to_string(drone.id));
+        if (drone.posX != this->x || drone.posY != this->y) {
+            // Return to Tower
+            logi("Retiring D" + std::to_string(drone.id));
+            LocationMessage *location = new LocationMessage(generateMessageId());
+            location->setLocation(this->x, this->y);
+            this->channel->sendMessageTo(drone.id, location);
+            delete location;
+        }
+    }
 }
 
 void Tower::handleInfoMessage(DroneInfoMessage *message) {
     logi(message->parseMessage());
+    Drone drone;
+    drone.id = message->getDroneId();
+    drone.posX = message->getPosX();
+    drone.posY = message->getPosY();
+    drone.batteryAutonomy = message->getBatteryAutonomy();
+    drone.batteryLife = message->getBatteryLife();
+    drone.droneState = static_cast<DroneState>(message->getState());
+    std::string query = "UPDATE drone SET x=" + std::to_string(drone.posX)
+        + ",y=" + std::to_string(drone.posY) + ",battery_autonomy=" + std::to_string(drone.batteryAutonomy)
+        + ",battery_life=" + std::to_string(drone.batteryLife) + ",dstate=" + std::to_string(drone.droneState)
+        + ",last_update=" + CURRENT_TIMESTAMP + " WHERE id=" + std::to_string(drone.id);
+    PostgreResult result = this->db->execute(query);
+    if (result.error) {
+        logError("DB", result.errorMessage);
+    }
+    switch (drone.droneState) {
+        case WAITING: // Associate Block
+            logi("Associate Block for " + std::to_string(drone.id));
+            this->associateBlock(drone);
+            break;
+        case CHARGING:
+            logi(std::to_string(drone.id) + " Charging");
+            break;
+        case MONITORING:
+            logi(std::to_string(drone.id) + " Monitoring");
+            break;
+        default:
+            loge("Invalid state " + std::to_string(drone.droneState) + " for drone " + std::to_string(drone.id));
+            break;
+    }
+}
+
+void Tower::calcolateDronePath(Drone drone) {
+    // Check Active Block
+    std::vector<Block> *blocks = this->area->getBlocks();
+    for (Block& block : *blocks) {
+        if (block.getAssignment() == drone.id) {
+            // Check block cells
+            if (block.getLastX() != drone.posX || block.getLastY() != drone.posY) {
+                block.setLastX(drone.posX);
+                block.setLastY(drone.posY);
+            }
+            x = block.getLastX() + block.getDirX();
+            y = block.getLastY();
+            if (x >= block.getX() + block.getWidth() || x < block.getX()) {
+                y += block.getDirY();
+                x -= block.getDirX();
+                if (y > block.getY() + block.getHeight() || y < block.getY()) {
+                    // Reset Block and Associate a new One
+                    this->associateBlock(drone);
+                    block.reset(this->x, this->y);
+                    return;
+                }
+                block.setDirX(-block.getDirX());
+            }
+            LocationMessage *location = new LocationMessage(generateMessageId());
+            location->setLocation(x, y);
+            this->channel->sendMessageTo(drone.id, location);
+            delete location; 
+            return;
+        }
+    }
+    // Not Returned before -> no Block associated
+    this->associateBlock(drone);
 }
 
 void Tower::handleLocationMessage(LocationMessage *message) {
     long long droneId = message->getChannelId();
     Drone drone = this->getDrone(droneId);
-    this->area[drone.posX][drone.posY] = 0;
+    this->area->operator[](drone.posX)[drone.posY] = 0;
     drone.posX = message->getX();
     drone.posY = message->getY();
     logi("Drone " + std::to_string(droneId) + " arrived at: " + std::to_string(drone.posX) + "," + std::to_string(drone.posY));
@@ -298,15 +413,15 @@ void Tower::handleLocationMessage(LocationMessage *message) {
     if (result.error) {
         logError("DB", result.errorMessage);
     }
-    // Next Step
-    calcolateDronePath(drone);
+    // Pick next step
+    this->calcolateDronePath(drone);
 }
 
 void Tower::handleRetireMessage(RetireMessage* message) {
     long long droneId = message->getChannelId();
     Drone drone = this->getDrone(droneId);
     this->area[drone.posX];
-    this->area[drone.posX][drone.posY] = 0;
+    this->area->operator[](drone.posX)[drone.posY] = 0;
     logi("Drone " + std::to_string(droneId) + " retiring");
     // TODO: Update to real drone position
     PostgreResult result = this->db->execute("UPDATE drone SET x = 0 ,y = 0, last_update = " + CURRENT_TIMESTAMP + " WHERE id = " + std::to_string(droneId));

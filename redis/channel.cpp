@@ -112,10 +112,14 @@ std::string PingMessage::parseMessage() {
 
 AssociateMessage::AssociateMessage(std::string id, long long droneId) : Message(id) {
     this->droneId = droneId;
+    this->towerX = 0;
+    this->towerY = 0;
 }
 
 AssociateMessage::AssociateMessage(long long messageId, long long droneId) : Message(messageId) {
     this->droneId = droneId;
+    this->towerX = 0;
+    this->towerY = 0;
 } 
 
 void AssociateMessage::parseResponse(RedisResponse* response) {
@@ -125,28 +129,57 @@ void AssociateMessage::parseResponse(RedisResponse* response) {
             std::string value = data[i];
             if (value.compare("droneId") == 0) {
                 this->droneId = std::stoll(data[i + 1]);
+            } else if (value.compare("x") == 0) {
+                this->towerX = std::stoi(data[i + 1]);
+            } else if (value.compare("y") == 0) {
+                this->towerY = std::stoi(data[i + 1]);
             }
         }
     }
 }
 
 std::string AssociateMessage::parseMessage() {
-    return "type " + std::to_string(this->getType()) + " droneId " + std::to_string(this->droneId);
+    return "type " + std::to_string(this->getType()) + " droneId " + std::to_string(this->droneId) + " x " + std::to_string(this->towerX) + " y " + std::to_string(this->towerY);
 }
 
 long long AssociateMessage::getDroneId() {
     return this->droneId;
 }
 
+int AssociateMessage::getTowerX() {
+    return this->towerX;
+}
+
+int AssociateMessage::getTowerY() {
+    return this->towerY;
+}
+
+void AssociateMessage::setTowerX(int towerX) {
+    this->towerX = towerX;
+}
+
+void AssociateMessage::setTowerY(int towerY) {
+    this->towerY = towerY;
+}
 // Drone Info Message Class
 // TODO: Add all drone infos
 
 DroneInfoMessage::DroneInfoMessage(std::string id) : Message(id) {
     this->droneId = -1;
+    this->posX = 0;
+    this->posY = 0;
+    this->batteryAutonomy = 0;
+    this->batteryLife = 0;
+    this->state = 0;
 }
 
 DroneInfoMessage::DroneInfoMessage(long long messageId) : Message(messageId) {
     this->droneId = -1;
+    this->posX = 0;
+    this->posY = 0;
+    this->batteryAutonomy = 0;
+    this->batteryLife = 0;
+    this->state = 0;
 } 
 
 void DroneInfoMessage::parseResponse(RedisResponse* response) {
@@ -158,20 +191,18 @@ void DroneInfoMessage::parseResponse(RedisResponse* response) {
                 continue;
             }
             std::string value = data[i + 1];
-            int intValue = std::stoi(value);
-            long long longValue = std::stoll(value);
             if (key.compare("droneId") == 0) {
-                this->droneId = longValue;
+                this->droneId = std::stoll(value);
             } else if (key.compare("x") == 0) {
-                this->posX = intValue;
+                this->posX = std::stoi(value);
             } else if (key.compare("y") == 0) {
-                this->posY = intValue;
+                this->posY = std::stoi(value);
             } else if (key.compare("batteryAutonomy") == 0) {
-                this->batteryAutonomy = longValue;
+                this->batteryAutonomy = std::stoll(value);
             } else if (key.compare("batteryLife") == 0) {
-                this->batteryLife = longValue;
+                this->batteryLife = std::stoll(value);
             } else if (key.compare("state") == 0) {
-                this->state = intValue;
+                this->state = std::stoi(value);
             }
         }
     }
