@@ -166,7 +166,6 @@ void Drone::movement(){
     long long nowTime = Time::nanos();
     bool sendMessage = true;
     while(this->running) {
-        logi("Movement");
         if (this->destX != this->posX || this->destY != this->posY) {
             logi("Moving to (" + std::to_string(this->destX) + "," + std::to_string(this->destY) + ")");
             sendMessage = true;
