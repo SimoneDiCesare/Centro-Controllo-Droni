@@ -53,9 +53,11 @@ class Drone {
         long long messageCounter;
         std::mutex messageCounterLock;
         // Drone infos
+        std::mutex destinationLock;
         int destX;
         int destY;
         long long id;
+        std::mutex positionLock;
         int posX;
         int posY;
         int towerX;

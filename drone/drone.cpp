@@ -47,7 +47,7 @@ Drone::Drone() : Drone(Drone::createId()){
 
 }
 
-Drone::Drone(long long id) : messageCounterLock() {
+Drone::Drone(long long id) : messageCounterLock(), destinationLock(), positionLock() {
     this->id = id;
     this->posX = 0;
     this->posY = 0;
@@ -104,10 +104,14 @@ bool Drone::connectToTower() {
         }
         this->towerX = association->getTowerX() * 20;
         this->towerY = association->getTowerY() * 20;
+        this->positionLock.lock();
         this->posX = this->towerX;
         this->posY = this->towerY;
+        this->positionLock.unlock();
+        this->destinationLock.lock();
         this->destX = this->posX;
         this->destY = this->posY;
+        this->destinationLock.unlock();
         // Consume message
         bool deleted = this->channel->removeMessage(association);
         if (deleted) {
@@ -165,93 +169,130 @@ void Drone::movement(){
     long long lastTime = Time::nanos();
     long long nowTime = Time::nanos();
     bool sendMessage = true;
+    int posX, posY, destX, destY;
     while(this->running) {
-        if (this->destX != this->posX || this->destY != this->posY) {
-            logi("Moving to (" + std::to_string(this->destX) + "," + std::to_string(this->destY) + ")");
+        // Copy values for thread safety and consistency
+        this->positionLock.lock();
+        posX = this->posX;
+        posY = this->posY;
+        this->positionLock.unlock();
+        this->destinationLock.lock();
+        destX = this->destX;
+        destY = this->destY;
+        this->destinationLock.unlock();
+        // Check Destination
+        /**
+         * Si muove a prescindere dallo stato. Dovrebbe muoversi unicamente se è in
+         * stato di monitoring. Fai un check, ed in caso deve muoversi (monitoring o
+         * di rientro) allora prosegui con il check sulla destinazione
+         */
+        if (destX != posX || destY != posY) {
+            logi("Moving to (" + std::to_string(destX) + "," + std::to_string(destY) + ")");
             sendMessage = true;
             nowTime = Time::nanos();
-            //controlla se riesci a tornare alla torre
-            float dist = std::sqrt((this->posX - this->towerX)*(this->posX - this->towerX) + (this->posY - this->towerY)*(this->posY - this->towerY));
-            float margin = 1 * 20; // Blocks of margin
-            float metriSec = this->velocity / 3.6;
-            float percorsoDisp = this->batteryAutonomy * metriSec;
-            
-            if (dist + margin <= percorsoDisp) {
+            // Check on battery level
+            float dist = std::sqrt((posX - this->towerX) * (posX - this->towerX) + (posY - this->towerY) * (posY - this->towerY));
+            float margin = 1 * 20; // Blocks of Margin
+            float mPerSec = this->velocity / 3.6;
+            float availableMeters = this->batteryAutonomy * mPerSec;
+            if (dist + margin <= availableMeters) {
                 long long delta = (nowTime - lastTime) * 1000;
                 this->batteryAutonomy -= delta;
-
-                if(this->posX == this->destX){
+                /**
+                 * Perché controlli se posX = destX, e poi controlli se posX < | > destX?
+                 * lo fai anche per le Y. Ricontrolla bene la logica dietro i movimenti.
+                 * Non so se è giusta o sbagliata eh, ma non mi convincono sti controlli.
+                 * Vedi poi se puoi accorpare le diverse cose in funzioni, perché più parti
+                 * di questa funzione sono molto simili tra loro. Magari lavora con delle refence.
+                 * n più, i controlli con i dx e i dy non mi sembrano correti, perché se vai
+                 * da sinistra a destra allora posX+dx <= destX, ma se vai da destra a sinistra
+                 * hai che posX+dx >= destX, perché ti muovi da un punto più lontano ad un punto più
+                 * vicino. La stessa cosa vale con le Y, se ti muovi dal basso all'alto
+                 * posY+dy >= destY sempre.
+                 */
+                if (posX == destX) { // X Movement
                     int upDown;
-                    if(destX > posX){
+                    if (destX > posX) {
                         upDown = 1;
-                    }else{
-                        upDown = -1;
-                    }
-
-                    long long dX = delta * metriSec * upDown;
-                    if (this->destX < this->posX + dX){
-                        this->posX = this->destX;
                     } else {
-                        this->posX = this->posX + dX;
-                    }
-
-                }else if (this->posY == this->destY){
-                    long long delta = (nowTime - lastTime) * 1000;
-                    
-                    int upDown;
-                    if(destY > posY){
-                        upDown = 1;
-                    }else{
                         upDown = -1;
                     }
-
-                    if(this->posY == this->destY){
-                        long long dY = delta * metriSec * upDown;
-                        if (this->destY < this->posY + dY){
-                            this->posY = this->destY;
-                        }else{
-                            this->posY = this->posY + dY;
+                    long long dx = delta * mPerSec * upDown;
+                    if (destX < posX + dx) {
+                        posX = destX;
+                    } else {
+                        posX = posX + dx;
+                    }
+                } else if (posY == destY) { // Y Movement
+                    long long delta = (nowTime - lastTime) * 1000;
+                    int upDown;
+                    if (destY > posY) {
+                        upDown = 1;
+                    } else {
+                        upDown = -1;
+                    }
+                    if (posY == destY) {
+                        long long dy = delta * mPerSec * upDown;
+                        if (destY < posY + dy) {
+                            posY = destY;
+                        } else {
+                            posY = posY + dy;
                         }
                     }
-
-                } else {
+                } else { // Diagonal Movements
                     long long delta = (nowTime - lastTime) * 1000;
-                    long long arcTang = std::atan((this->posY - this->destY) / (this->posX - this->destX));
+                    long long arcTang = std::atan((posY - destY) / (posX - destX));
                     long long speedX = std::cos(arcTang);
                     long long speedY = std::sin(arcTang);
-
-                    long long dX = speedX * delta;
-                    long long dY = speedY * delta;
-
-                    if(this->destX < this->posX + dX || this->destY < this->posY + dY ){
-                        this->posX = this->destX;
-                        this->posY = this->destY;
+                    long long dx = speedX * delta;
+                    long long dy = speedY * delta;
+                    if (destX < posX + dx) {
+                        posX = destX;
                     } else {
-                        this->posX = this->posX + dX;
-                        this->posY = this->posY + dY;
+                        posX = posX + dx;
+                    }
+                    if (destY < posY + dy) {
+                        posY = destY;
+                    } else {
+                        posY = posY + dy;
                     }
                 }
-
+                this->positionLock.lock();
+                this->posX = posX;
+                this->posY = posY;
+                this->positionLock.unlock();
             } else {
+                /**
+                 * Qui la funzione arriva ogni qualvolta che c'è bisogno di rientrare,
+                 * facendo rimanere il drone immobile se ha bisogno di rientrare ed
+                 * intasando il canale di redis. Fai il check per controllare se sta
+                 * rientrando, e muoviti a prescindere dai metri che puoi percorrere
+                 * se devi rientrare.
+                 */
                 logi("Need to Retire");
-                RetireMessage  *message = new RetireMessage(this->generateMessageId());
-                this->channel->sendMessageTo(0, message);
-                this->destX = this->towerX; // TODO: Wait Tower location
+                RetireMessage *retire = new RetireMessage(this->generateMessageId());
+                this->channel->sendMessageTo(0, retire);
+                this->destinationLock.lock();
+                this->destX = this->towerX;
                 this->destY = this->towerY;
+                this->destinationLock.unlock();
             }
         } else if (sendMessage) {
             sendMessage = false;
-            LocationMessage *locMessage = new LocationMessage(this->generateMessageId());
-            locMessage->setLocation(this->posX , this->posY);
-            this->channel->sendMessageTo(0, locMessage);
+            LocationMessage *location = new LocationMessage(this->generateMessageId());
+            location->setLocation(posX, posY);
+            this->channel->sendMessageTo(0, location);
+            delete location;
         }
         lastTime = nowTime;
     }
 }
 
 void Drone::moveTo(int x, int y) {
+    this->destinationLock.lock();
     this->destX = x * 20;
     this->destY = y * 20;
+    this->destinationLock.unlock();
     this->state = MONITORING;
     logi("Setting destination to (" + std::to_string(this->destX) + "," + std::to_string(this->destY) + ")");
 }
@@ -320,11 +361,15 @@ void Drone::handleMessage(Message *message) {
 // Setter
 
 void Drone::setPosX(int posX) {
+    this->positionLock.lock();
     this->posX = posX;
+    this->positionLock.unlock();
 }
 
 void Drone::setPosY(int posY) {
+    this->positionLock.lock();
     this->posY = posY;
+    this->positionLock.unlock();
 }
 
 void Drone::setBatteryAutonomy(long long batteryAutonomy) {
@@ -346,11 +391,17 @@ long long Drone::getId() {
 }
 
 int Drone::getPosX() {
-    return this->posX;
+    this->positionLock.lock();
+    int posX = this->posX;
+    this->positionLock.unlock();
+    return posX;
 }
 
 int Drone::getPosY() {
-    return this->posY;
+    this->positionLock.lock();
+    int posY = this->posY;
+    this->positionLock.unlock();
+    return posY;
 }
 
 long long Drone::getBatteryAutonomy() {
