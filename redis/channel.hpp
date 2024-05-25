@@ -1,6 +1,7 @@
 #ifndef CHANNEL_HPP
 #define CHANNEL_HPP
 #include "redis.hpp"
+#include "globals.hpp"
 #include <string>
 #include <vector>
 #include <tuple>
@@ -269,7 +270,7 @@ class DroneInfoMessage : public Message {
         /**
          * @return The state of this drone.
          */
-        int getState();
+        DroneState getState();
         /**
          * @brief Set the id of this drone.
          * @param id The new drone id.
@@ -299,14 +300,14 @@ class DroneInfoMessage : public Message {
          * @brief Set the state of thid drone.
          * @param state The new drone state.
          */
-        void setState(int state);
+        void setState(DroneState state);
     private:
         long long droneId;         ///< The drone id.
         int posX;                  ///< The x position of the drone.
         int posY;                  ///< The y position of the drone.
         long long batteryAutonomy; ///< The battery autonomy in seconds.
         long long batteryLife;     ///< The total battery duration in seconds.
-        int state;                 ///< The drone state.
+        DroneState state;                 ///< The drone state.
 };
 
 /**

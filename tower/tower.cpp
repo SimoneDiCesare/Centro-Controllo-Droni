@@ -248,6 +248,12 @@ void Tower::start() {
     for (auto& thread : threads) {
         thread.join();
     }
+    bool channelFlushed = this->channel->flush();
+    if (channelFlushed) {
+        logi("Channel Flushed!");
+    } else {
+        loge("Can't flush redis channel");
+    }
     // TODO: - Disconnect and release drones
     //       - Exit with received signal 
 }
@@ -342,7 +348,7 @@ void Tower::handleInfoMessage(DroneInfoMessage *message) {
     drone.posY = message->getPosY();
     drone.batteryAutonomy = message->getBatteryAutonomy();
     drone.batteryLife = message->getBatteryLife();
-    drone.droneState = static_cast<DroneState>(message->getState());
+    drone.droneState = message->getState();
     std::string query = "UPDATE drone SET x=" + std::to_string(drone.posX)
         + ",y=" + std::to_string(drone.posY) + ",battery_autonomy=" + std::to_string(drone.batteryAutonomy)
         + ",battery_life=" + std::to_string(drone.batteryLife) + ",dstate=" + std::to_string(drone.droneState)
@@ -352,15 +358,25 @@ void Tower::handleInfoMessage(DroneInfoMessage *message) {
         logError("DB", result.errorMessage);
     }
     switch (drone.droneState) {
-        case WAITING: // Associate Block
+        case CHARGING:
+            // Skip
+            logi("Drone Charging");
+            break;
+        case READY: // Associate Block
             logi("Associate Block for " + std::to_string(drone.id));
             this->associateBlock(drone);
             break;
-        case CHARGING:
-            logi(std::to_string(drone.id) + " Charging");
+        case WAITING: // Next Move
+            logi("Next step for " + std::to_string(drone.id));
+            this->calcolateDronePath(drone);
             break;
         case MONITORING:
-            logi(std::to_string(drone.id) + " Monitoring");
+            // Skip
+            logi("Drone Monitoring");
+            break;
+        case RETURNING:
+            // Skip
+            logi("Drone Returning");
             break;
         default:
             loge("Invalid state " + std::to_string(drone.droneState) + " for drone " + std::to_string(drone.id));
@@ -420,11 +436,10 @@ void Tower::handleLocationMessage(LocationMessage *message) {
 void Tower::handleRetireMessage(RetireMessage* message) {
     long long droneId = message->getChannelId();
     Drone drone = this->getDrone(droneId);
-    this->area[drone.posX];
     this->area->operator[](drone.posX)[drone.posY] = 0;
     logi("Drone " + std::to_string(droneId) + " retiring");
     // TODO: Update to real drone position
-    PostgreResult result = this->db->execute("UPDATE drone SET x = 0 ,y = 0, last_update = " + CURRENT_TIMESTAMP + " WHERE id = " + std::to_string(droneId));
+    PostgreResult result = this->db->execute("UPDATE drone SET last_update = " + CURRENT_TIMESTAMP + " WHERE id = " + std::to_string(droneId));
     if (result.error) {
         logError("DB", result.errorMessage);
     }
@@ -433,6 +448,13 @@ void Tower::handleRetireMessage(RetireMessage* message) {
     loc->setMovementType(0);
     this->channel->sendMessageTo(drone.id, loc);
     delete loc;
+    // Deassociate Block
+    for (Block& block : *this->area->getBlocks()) {
+        if (block.getAssignment() == droneId) {
+            block.assignTo(-1);
+            break;
+        }
+    }
 }
 
 void Tower::handleDisconnection(DisconnectMessage* message) {

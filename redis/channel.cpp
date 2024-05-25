@@ -170,7 +170,7 @@ DroneInfoMessage::DroneInfoMessage(std::string id) : Message(id) {
     this->posY = 0;
     this->batteryAutonomy = 0;
     this->batteryLife = 0;
-    this->state = 0;
+    this->state = READY;
 }
 
 DroneInfoMessage::DroneInfoMessage(long long messageId) : Message(messageId) {
@@ -179,7 +179,7 @@ DroneInfoMessage::DroneInfoMessage(long long messageId) : Message(messageId) {
     this->posY = 0;
     this->batteryAutonomy = 0;
     this->batteryLife = 0;
-    this->state = 0;
+    this->state = READY;
 } 
 
 void DroneInfoMessage::parseResponse(RedisResponse* response) {
@@ -202,7 +202,7 @@ void DroneInfoMessage::parseResponse(RedisResponse* response) {
             } else if (key.compare("batteryLife") == 0) {
                 this->batteryLife = std::stoll(value);
             } else if (key.compare("state") == 0) {
-                this->state = std::stoi(value);
+                this->state = static_cast<DroneState>(std::stoi(value));
             }
         }
     }
@@ -216,6 +216,7 @@ std::string DroneInfoMessage::parseMessage() {
     message += " battery_autonomy " + std::to_string(this->batteryAutonomy);
     message += " battery_life " + std::to_string(this->batteryLife);
     message += " state " + std::to_string(this->state);
+    // std::cout << message << "\n";
     return message;
 }
 
@@ -241,7 +242,7 @@ long long DroneInfoMessage::getBatteryLife() {
     return this->batteryLife;
 }
 
-int DroneInfoMessage::getState() {
+DroneState DroneInfoMessage::getState() {
     return this->state;
 } 
 
@@ -267,7 +268,7 @@ void DroneInfoMessage::setBatteryLife(long long batteryLife) {
     this->batteryLife = batteryLife;
 }
 
-void DroneInfoMessage::setState(int state) {
+void DroneInfoMessage::setState(DroneState state) {
     this->state = state;
 }
 
@@ -484,10 +485,51 @@ bool Channel::flush() {
     if (!this->canWrite()) {
         return false;
     }
-    RedisResponse *response = this->sendWriteCommand("DEL c:" + std::to_string(this->id));
+    RedisResponse *response = this->sendReadCommand("LLEN c:" + std::to_string(this->id));
     if (response->hasError()) {
         if (response->getType() == NONE) {
-            std::cout << "Timeout flushin channel!";
+            std::cout << "Timeout on retrieving queue length!";
+        } else {
+            std::cout << "Error: " << response->getError() << "\n";
+        }
+        delete response;
+        return false;
+    }
+    if (response->getType() != INTEGER) {
+        std::cout << "Unexpected behaviour!\n";
+        return false;
+    }
+    int count = std::stoi(response->getContent());
+    delete response;
+    response = this->sendReadCommand("LRANGE c:" + std::to_string(this->id) + " 0 " + std::to_string(count));
+    if (response->hasError()) {
+        if (response->getType() == NONE) {
+            std::cout << "Timeout on retrieving pending queue!\n";
+        } else {
+            std::cout << "Error: " << response->getError() << "\n";
+        }
+        delete response;
+        return false;
+    }
+    std::vector<std::string> pendingMessages = response->getVectorContent();
+    delete response;
+    bool allDeleted = true;
+    for (std::string& messageId : pendingMessages) {
+        response = this->sendWriteCommand("DEL " + messageId);
+        if (response->hasError()) {
+            if (response->getType() == NONE) {
+                std::cout << "Timeout on deleting message " << messageId << "\n";
+            } else {
+                std::cout << "Error: " << response->getError() << "\n";
+            }
+            allDeleted = false;
+        }
+        delete response;
+    }
+    response = this->sendWriteCommand("DEL c:" + std::to_string(this->id));
+    if (response->hasError()) {
+        if (response->getType() == NONE) {
+            std::cout << "Timeout on deleting channel!\n";
         } else {
             std::cout << "Error: " << response->getError() << "\n";
         }
@@ -495,7 +537,7 @@ bool Channel::flush() {
         return false;
     }
     delete response;
-    return true;
+    return allDeleted;
 }
 
 // Reading Operations

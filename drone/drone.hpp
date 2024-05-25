@@ -30,22 +30,21 @@ class Drone {
         void start();
         void moveTo(int x, int y);
         void handleMessage(Message*);
-        void axisMovement(double delta, int& pos, int& dest);
         void move(double delta);
-        void moveDiagonal(double delta);
         void behaviourLoop();
+        void checkBattery();
         // Setter
         void setPosX(double posX);
         void setPosY(double posY);
-        void setBatteryAutonomy(long long batteryAutonomy);
-        void setBatteryLife(long long batteryLife);
+        void setBatteryAutonomy(double batteryAutonomy);
+        void setBatteryLife(double batteryLife);
         void setState(DroneState state);
         // Getter
         long long getId();
         double getPosX();
         double getPosY();
-        long long getBatteryAutonomy();
-        long long getBatteryLife();
+        double getBatteryAutonomy();
+        double getBatteryLife();
         DroneState getState();
         int getRangeOfAction();
         int getVelocity();
@@ -65,13 +64,15 @@ class Drone {
         double posY;
         int towerX;
         int towerY;
-        long long batteryAutonomy;
-        long long batteryLife;
+        double batteryAutonomy;
+        double batteryLife;
+        long long charge;
+        long long rechargeTime;
+        std::mutex stateMutex;
         DroneState state;
         int rangeOfAction; // Useful? => Constant can handle this?
         int velocity; // Useful? => Costant for semplicity?
         // Utility functions
-        long long randomBattery();
         static long long createId();
         void logi(std::string message);
         void loge(std::string message);
