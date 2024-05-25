@@ -421,9 +421,13 @@ void Tower::calcolateDronePath(Drone drone) {
 void Tower::handleLocationMessage(LocationMessage *message) {
     long long droneId = message->getChannelId();
     Drone drone = this->getDrone(droneId);
-    this->area->operator[](drone.posX)[drone.posY] = 0;
     drone.posX = message->getX();
     drone.posY = message->getY();
+    if (drone.posX < 0 || drone.posX >= this->areaWidth || drone.posY < 0 || drone.posY >= this->areaHeight) {
+        loge("Drone " + std::to_string(droneId) + " out of bounds! (" + std::to_string(drone.posX) + "," + std::to_string(drone.posY) + ")");
+    } else {
+        this->area->operator[](drone.posX)[drone.posY] = 0;
+    }
     logi("Drone " + std::to_string(droneId) + " arrived at: " + std::to_string(drone.posX) + "," + std::to_string(drone.posY));
     PostgreResult result = this->db->execute("UPDATE drone SET x = " + std::to_string(drone.posX) + ", y = " + std::to_string(drone.posY) + ", last_update = " + CURRENT_TIMESTAMP + " WHERE id = " + std::to_string(droneId));
     if (result.error) {
