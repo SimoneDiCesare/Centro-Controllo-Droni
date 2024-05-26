@@ -1,13 +1,14 @@
 # Fdb version 4
-["makeindex relazione.idx"] 1716371193 "relazione.idx" "relazione.ind" "relazione" 1716371575 0
-  "relazione.idx" 1716371575 0 d41d8cd98f00b204e9800998ecf8427e "pdflatex"
+["makeindex relazione.idx"] 1716371193 "relazione.idx" "relazione.ind" "relazione" 1716541506 0
+  "relazione.idx" 1716541506 0 d41d8cd98f00b204e9800998ecf8427e "pdflatex"
   (generated)
   "relazione.ilg"
   "relazione.ind"
   (rewritten before read)
-["pdflatex"] 1716371574 "/Users/armandocoppola/Documents/Centro-Controllo-Droni/Relazione/relazione.tex" "relazione.pdf" "relazione" 1716371575 0
-  "/Users/armandocoppola/Documents/Centro-Controllo-Droni/Relazione/relazione.tex" 1716371574 3292 ac071378c45760d3baab5d4ad1776727 ""
+["pdflatex"] 1716541505 "/Users/armandocoppola/Documents/Centro-Controllo-Droni/Relazione/relazione.tex" "relazione.pdf" "relazione" 1716541506 0
+  "/Users/armandocoppola/Documents/Centro-Controllo-Droni/Relazione/relazione.tex" 1716541504 5872 fc488c244452a0eb5df83ed084a0b84f ""
   "/usr/local/texlive/2023/texmf-dist/fonts/enc/dvips/lm/lm-mathit.enc" 1202520719 2405 5dcf2c1b967ee25cc46c58cd52244aed ""
+  "/usr/local/texlive/2023/texmf-dist/fonts/enc/dvips/lm/lm-mathsy.enc" 1202520719 2840 216e6e45ad352e2456e1149f28885bee ""
   "/usr/local/texlive/2023/texmf-dist/fonts/enc/dvips/lm/lm-rm.enc" 1202520719 2327 9d6df24f9c4f7368395224341a95523a ""
   "/usr/local/texlive/2023/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "/usr/local/texlive/2023/texmf-dist/fonts/tfm/public/amsfonts/symbols/msam10.tfm" 1246382020 916 f87d7c45f9c908e672703b83b72241a3 ""
@@ -32,6 +33,7 @@
   "/usr/local/texlive/2023/texmf-dist/fonts/tfm/public/lm/rm-lmr6.tfm" 1254269338 11836 e3b6ce3e601aec94f64a536e7f4224d5 ""
   "/usr/local/texlive/2023/texmf-dist/fonts/tfm/public/lm/rm-lmr7.tfm" 1254269338 11852 5a9022f105fd1ee2797df861e79ae9a0 ""
   "/usr/local/texlive/2023/texmf-dist/fonts/tfm/public/lm/rm-lmr8.tfm" 1254269338 11864 309fd7f43e4a0ba39f6f7644d76e8edf ""
+  "/usr/local/texlive/2023/texmf-dist/fonts/tfm/public/lm/rm-lmri12.tfm" 1254269338 16968 09a34e0af90920bbcece784f13606525 ""
   "/usr/local/texlive/2023/texmf-dist/fonts/tfm/public/stmaryrd/stmary10.tfm" 1302307949 848 f478e0761563bbc369eca609a1741348 ""
   "/usr/local/texlive/2023/texmf-dist/fonts/tfm/public/stmaryrd/stmary6.tfm" 1302307949 848 068dd119e13b75777e62821af7d4f2a6 ""
   "/usr/local/texlive/2023/texmf-dist/fonts/tfm/public/stmaryrd/stmary7.tfm" 1302307949 848 26631fcb3e4cb6757598b9cda7967b63 ""
@@ -40,6 +42,8 @@
   "/usr/local/texlive/2023/texmf-dist/fonts/type1/public/lm/lmmi12.pfb" 1254269338 30696 2654571912f9cd384da9f7cb8a60c568 ""
   "/usr/local/texlive/2023/texmf-dist/fonts/type1/public/lm/lmr12.pfb" 1255129361 113634 f99c44d58bae0863375faf0e1d74d612 ""
   "/usr/local/texlive/2023/texmf-dist/fonts/type1/public/lm/lmr17.pfb" 1255129361 119752 1bd8d06e4079df624bf59ce3ad7c9aa6 ""
+  "/usr/local/texlive/2023/texmf-dist/fonts/type1/public/lm/lmri12.pfb" 1255129361 109265 32320cb6133d4d76bf83e27b5eb4009b ""
+  "/usr/local/texlive/2023/texmf-dist/fonts/type1/public/lm/lmsy10.pfb" 1254269338 27863 09ce3735688ffde955e72da27c95b61a ""
   "/usr/local/texlive/2023/texmf-dist/tex/context/base/mkii/supp-pdf.mkii" 1461363279 71627 94eb9990bed73c364d7f53f960cc8c5b ""
   "/usr/local/texlive/2023/texmf-dist/tex/generic/atbegshi/atbegshi.sty" 1575674566 24708 5584a51a7101caf7e6bbf1fc27d8f7b1 ""
   "/usr/local/texlive/2023/texmf-dist/tex/generic/bigintcalc/bigintcalc.sty" 1576625341 40635 c40361e206be584d448876bba8a64a3b ""
@@ -209,6 +213,7 @@
   "/usr/local/texlive/2023/texmf-dist/tex/latex/listingsutf8/listingsutf8.sty" 1576101256 5148 1baf596b2560b44d9ff1889dc1d7564e ""
   "/usr/local/texlive/2023/texmf-dist/tex/latex/lm/lmodern.sty" 1616454256 1608 b00724785a9e9c599e5181bb8729160b ""
   "/usr/local/texlive/2023/texmf-dist/tex/latex/lm/omllmm.fd" 1616454256 890 57f5adccd504fb5c98bdf99ed7e7f195 ""
+  "/usr/local/texlive/2023/texmf-dist/tex/latex/lm/omslmr.fd" 1616454256 1015 4454d259a136107a5fef2d4952c08a5a ""
   "/usr/local/texlive/2023/texmf-dist/tex/latex/lm/omslmsy.fd" 1616454256 807 3de192f3efa968913bd2f096a7b430d8 ""
   "/usr/local/texlive/2023/texmf-dist/tex/latex/lm/omxlmex.fd" 1616454256 568 a5494d810f2680caf10205cd1226c76c ""
   "/usr/local/texlive/2023/texmf-dist/tex/latex/lm/ot1lmr.fd" 1616454256 1882 28c08db1407ebff35a658fd141753d16 ""
@@ -264,11 +269,11 @@
   "/usr/local/texlive/2023/texmf-var/fonts/map/pdftex/updmap/pdftex.map" 1697116817 4623355 b8cad38412faebe1ce5b780a45db67bd ""
   "/usr/local/texlive/2023/texmf-var/web2c/pdftex/pdflatex.fmt" 1697116803 7883461 5d8618da09566710eca4f0db5c6faf18 ""
   "/usr/local/texlive/2023/texmf.cnf" 1678822455 577 1b2b1af17af2508fb20dd85783af4050 ""
-  "relazione.aux" 1716371575 867 bf805649bacaf30ec8d01b00c05c83cf "pdflatex"
+  "relazione.aux" 1716541506 867 6c1821b27ea53951e9470202326c4eff "pdflatex"
   "relazione.ind" 1716371193 0 d41d8cd98f00b204e9800998ecf8427e "makeindex relazione.idx"
-  "relazione.out" 1716371575 298 6191fa333c0487ed3f27b3bff1cc1154 "pdflatex"
-  "relazione.tex" 1716371574 3292 ac071378c45760d3baab5d4ad1776727 ""
-  "relazione.toc" 1716371575 155 3e56a727ab29cb84bf5febb0d4243481 "pdflatex"
+  "relazione.out" 1716541506 298 6191fa333c0487ed3f27b3bff1cc1154 "pdflatex"
+  "relazione.tex" 1716541504 5872 fc488c244452a0eb5df83ed084a0b84f ""
+  "relazione.toc" 1716541506 155 3e56a727ab29cb84bf5febb0d4243481 "pdflatex"
   (generated)
   "relazione.aux"
   "relazione.idx"

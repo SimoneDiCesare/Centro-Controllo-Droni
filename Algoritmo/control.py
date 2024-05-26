@@ -98,9 +98,9 @@ def calculate_time_diag(a,b):
 #ogni STEO indica un'iterazione del codice
 #in questa iterazione il drone si muove di STEP
 #ogni STEP indica 2.4 secondi. 
-dim = 10 #per problema originale dim = 300
-common_time = 150 #per problema originale dim = 750
-Ndrones = 100
+dim = 300 #per problema originale dim = 300
+common_time = 80 #per problema originale dim = 750
+Ndrones = 120
 origin = (int((dim-1)/2),int((dim-1)/2)) #presumendo che l'area sia QUADRATA
 t_iter = 5000
 #-----------
@@ -262,7 +262,7 @@ def controlD(mat):
                 d.time_of_fly-=1
             #print(d, f"blocco: {assignment[d]}, diag: {diagonal[d.id]}" )
         #print(recharge)
-        vis.visualizza(mat)
+        #vis.visualizza(mat)
         mat = updateTime(mat)
         avg,maxx = mt.info(mat)
         in_volo = 0

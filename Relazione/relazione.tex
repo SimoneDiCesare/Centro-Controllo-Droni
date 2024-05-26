@@ -71,20 +71,45 @@ Sta alla torre quindi il compito di calcolare, mentre i droni sono in volo, il p
 il più frequentemente possibile, tenendo conto dei punti visitati, dei droni in volo, e dei punti che visitano prima di scaricarsi.
 
 \section{Idea dell'algoritmo}
-Contando di avere un database che contiene per ogni drone:
-\begin{enumerate}
-    \item posizione
-    \item stato
-\end{enumerate}
+Contando di avere un database con \{\textit{Id, Posizione, Stato, Blocco}\} di tutti i droni che si sono connessi alla torre e le dimensioni dell'area da sorvegliare, la torre inizia a seguire il seguente algoritmo.
 
-un drone può trovarsi in solo $n$ stati:
+Un drone può trovarsi in solo $6$ stati:
 \begin{enumerate}
     \item \textbf{Ready:} il drone è carico e si trova nella torre di controllo (è pronto a partire)
     \item \textbf{Starting:} il drone si sta posizionando verso il punto di partenza assegnatogli dalla torre di controllo
     \item \textbf{Flying:} il drone sta scansionando l'area che gli è stata assegnata seguendo i punti inviati dalla torre
     \item \textbf{Returning:} la carica del drone è sufficiente solo per il suo rientro 
+    \item \textbf{Charging:} il drone si trova alla base, e sta ricaricando la sua batteria
+    \item \textbf{Death:} la batteria del drone si è scaricata prima che questo potesse rientrare oppure la torre di controllo non riesce più a contattarlo.
 \end{enumerate}
+Di seguito vengono espresse le varie fasi dell'algoritmo seguito dalla torre di controllo e dai droni.
+\begin{enumerate}
+    
+    \item Per prima cosa, la torre di controllo conta i droni che si sono connessi e divide l'area da sorvegliare in $N$ blocchi tutti della stessa misura secondo una specifica funzione che fa in modo di avere $N \ge $numero dei droni.
 
+    \item Successivamente assegna ad ogni drone \textit{Ready} un blocco.
+
+    \item Il drone si dirige al punto di partenza stabilito assegnatogli dalla torre. Non appena raggiunge il punto lo comunica alla torre.
+
+    \item Quando la torre riceve il messaggio dal drone che si trova al punto di partenza del blocco, cambia il suo stato in \textit{Flying}.
+
+    \item Quando un drone in stato \textit{Flying} comunica alla torre che ha raggiunto il punto da lei inviato, questa risponde inviandole il punto successivo in base ad un semplice algoritmo di scanning del blocco.
+
+    \item Quando la torre riconosce che il drone ha scansionato l'intero blocco assegnatogli, lo dissocia da tale blocco e glie ne assegna uno nuovo.
+
+    \item La torre sceglie il blocco da assegnare ad un drone basandosi sul\\ paradigma del\textit{"Max Visit Time"} (analizzato in seguito):\\
+    Dunque il drone riceve il punto di partenza del nuovo blocco e si dirige lì.
+    Una volta ragiunto il loop ricomincia dal punto $5$
+
+    \item Quando il drone calcola che la batteria che gli rimane è appena sufficiente a rientrare alla torre invia un messaggio che segnala il suo rientro e si dirige nella posizione della torre di controllo.
+    Quando la torre riceve il suo messaggio, mette il drone in stato di \textit{Returning} e modifica imposta lo start del blocco all'ultimo punto visitato dal drone.
+
+    \item Quando il drone arriva alla torre di controllo viene messo in stato di \textit{Charging} e inizia a ricaricarsi.
+    La torre gli assegnerà lo stato \textit{Ready} non appena la batteria sarà carica.
+
+    \item Se la torre non riceve messaggi da un drone in volo per troppo tempo questo passa in stato \textit{Death}
+\end{enumerate}
+Questo è il ciclo principale che viene seguito finché il programma non viene interrotto da un operatore esterno o quando tutti i droni muoiono.
 
 
 \end{document}
