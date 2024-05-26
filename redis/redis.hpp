@@ -129,4 +129,4 @@ class Redis {
         int sockFd;     ///< Socket for writing to/reading from the Redis Server.
 };
 
-#endif
+#endif  // REDIS_HPP

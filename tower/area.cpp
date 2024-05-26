@@ -1,4 +1,5 @@
 #include "area.hpp"
+#include "log.hpp"
 #include <vector>
 #include <string>
 #include <cmath>
@@ -19,8 +20,8 @@ Block::~Block() {
 }
 
 void Block::orientBlock(int facingX, int facingY) {
-    int pointX[4] = {this->x, this->x, this->x + width, this->x + this->width};
-    int pointY[4] = {this->y, this->y + this->height, this->y, this->y + this->height};
+    int pointX[4] = {this->x, this->x, this->x + width - 1, this->x + this->width - 1};
+    int pointY[4] = {this->y, this->y + this->height - 1, this->y, this->y + this->height - 1};
     int maxDist = 0;
     for (int i = 0; i < 4; i++) {
         int dist = ((facingX - pointX[i]) * (facingX - pointX[i]));
@@ -159,7 +160,7 @@ void Area::initArea(int blockCount, int centerX, int centerY) {
     int blockWidth = 0;
     int blockHeight = 0;
     calculateBlocksInArea(this->width, this->height, blockCount, blockWidth, blockHeight);
-    std::cout << "Area Approximated for: " << blockCount << " block of " << blockWidth << "X" << blockHeight << "\n";
+    logDebug("Area", "Area Approximated to " + std::to_string(blockCount) + "(" + std::to_string(blockWidth) + "," + std::to_string(blockHeight) + ")");
     int x = 0;
     int y = 0;
     for (int i = 0; i < blockCount; i++) {
@@ -184,7 +185,7 @@ void Area::initArea(int blockCount, int centerX, int centerY) {
         b.orientBlock(centerX, centerY);
         this->blocks->push_back(b);
     }
-    std::cout << "Ended with: " << this->blocks->size() << " blocks\n";
+    logDebug("Area", "Fitted " + std::to_string(this->blocks->size()) + " blocks");
 }
 
 Area::~Area() {

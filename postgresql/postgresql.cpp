@@ -22,7 +22,6 @@ std::string buildArgs(const PostgreArgs args) {
     }
     formattedArgs += " hostaddr=" + args.ip;
     formattedArgs += " port=" + std::to_string(args.port);
-    // std::cout << formattedArgs << "\n";
     return formattedArgs;
 }
 
@@ -31,11 +30,6 @@ std::string buildArgs(const PostgreArgs args) {
 Postgre::Postgre(const PostgreArgs args) : transactionMutex() {
     std::string formattedArgs = buildArgs(args);
     this->conn = new pqxx::connection(formattedArgs);
-    // if (!this->conn->is_open()) {
-    //     std::cout << "Can't connect to postgre\n";
-    // } else {
-    //     std::cout << "Connected to db\n";
-    // }
 }
 
 Postgre::~Postgre() {

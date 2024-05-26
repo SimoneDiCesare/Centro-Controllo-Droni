@@ -4,13 +4,15 @@
 #include "log.hpp"
 #include "channel.hpp"
 #include "area.hpp"
+#include "time.hpp"
 #include <cmath>
 #include <chrono>
 
 // TODO: - Argument parsing
+// ./bin/tower_exe DRONE_NUMBER AREA_WIDTH AREA_HEIGHT EXECUTION_TIME
 int main(int argc, char* argv[]) {
     logVerbose(true);
-    logOpen("tower.log");
+    logOpen("tower - " + std::to_string(Time::nanos()) + ".log");
     for (int i = 0; i < argc; i++) {
         logInfo("Init", std::to_string(i) + ") " + std::string(argv[i]));
     }

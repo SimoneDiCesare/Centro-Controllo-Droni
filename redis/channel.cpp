@@ -1,5 +1,6 @@
 #include "channel.hpp"
 #include "redis.hpp"
+#include "log.hpp"
 #include <iostream>
 #include <string>
 #include <vector>
@@ -7,6 +8,18 @@
 #include <chrono>
 
 // utility local functions
+
+void logChannelError(std::string message) {
+    logError("Channel", message);
+}
+
+void logChannelDebug(std::string message) {
+    logDebug("Channel", message);
+}
+
+void logChannelWarning(std::string message) {
+    logWarning("Channel", message);
+}
 
 bool connectClient(Redis *redis, std::string ip, int port) {
     if (redis == nullptr) {
@@ -48,7 +61,7 @@ bool isValidMessageId(std::string id) {
 Message::Message(std::string id) {
     std::size_t delimiter = id.find(":");
     if (delimiter == std::string::npos) {
-        std::cout << "Invalid ID: " << id << "\n";
+        logChannelError("Invalid Message ID: " + id);
         return;
     } else {
         this->channelId = std::stoll(id.substr(0, delimiter));
@@ -89,18 +102,9 @@ PingMessage::PingMessage(long long messageId) : Message(messageId) {
 
 void PingMessage::parseResponse(RedisResponse *response) {
     if (response->hasError()) {
-        std::cout << "Can't PING:\n" << response->getError() << "\n";
+        logChannelError("Can't ping: " + response->getError());
         delete response;
         return;
-    }
-    if (response->getType() == VECTOR) {
-        std::vector<std::string> vector = response->getVectorContent();
-        std::cout << vector.size() << "\n";
-        for (int i = 0; i < vector.size(); i++) {
-            std::cout << vector[i] << "\n";
-        }
-    } else {
-        std::cout << response->getContent() << "\n";
     }
 }
 
@@ -183,6 +187,10 @@ DroneInfoMessage::DroneInfoMessage(long long messageId) : Message(messageId) {
 } 
 
 void DroneInfoMessage::parseResponse(RedisResponse* response) {
+    if (response->hasError()) {
+        logChannelError("Can't parse Drone Info: " + response->getError());
+        return;
+    }
     if (response->getType() == VECTOR) {
         std::vector<std::string> data = response->getVectorContent();
         for (int i = 0; i < data.size(); i+=2) {
@@ -216,7 +224,6 @@ std::string DroneInfoMessage::parseMessage() {
     message += " battery_autonomy " + std::to_string(this->batteryAutonomy);
     message += " battery_life " + std::to_string(this->batteryLife);
     message += " state " + std::to_string(this->state);
-    // std::cout << message << "\n";
     return message;
 }
 
@@ -283,6 +290,10 @@ LocationMessage::LocationMessage(long long messageId) : Message(messageId) {
 }
 
 void LocationMessage::parseResponse(RedisResponse* response) {
+    if (response->hasError()) {
+        logChannelError("Can't parse Location: " + response->getError());
+        return;
+    }
     if (response->getType() == VECTOR) {
         std::vector<std::string> data = response->getVectorContent();
         for (int i = 0; i < data.size(); i+=2) {
@@ -341,7 +352,10 @@ RetireMessage::RetireMessage(long long messageId) : Message(messageId) {
 }
 
 void RetireMessage::parseResponse(RedisResponse* response) {
-    // Nothing to parse
+    if (response->hasError()) {
+        logChannelError("Can't parse Retire: " + response->getError());
+        return;
+    }
 }
 
 std::string RetireMessage::parseMessage() {
@@ -359,7 +373,10 @@ DisconnectMessage::DisconnectMessage(long long messageId) : Message(messageId) {
 }
 
 void DisconnectMessage::parseResponse(RedisResponse* response) {
-    // Nothing to parse
+    if (response->hasError()) {
+        logChannelError("Can't parse Disconnection: " + response->getError());
+        return;
+    }
 }
 
 std::string DisconnectMessage::parseMessage() {
@@ -403,7 +420,7 @@ bool Channel::connect(std::string ip /*= "127.0.0.1"*/, int port /*= 6379*/) {
         this->readingClient = new Redis();
     }
     if (!connectClient(this->readingClient, ip, port)) {
-        std::cout << "Can't connect Reading Client!";
+        logChannelError("Can't connect Reading Client!");
     }
     this->readingLock.unlock();
     this->writingLock.lock();
@@ -411,7 +428,7 @@ bool Channel::connect(std::string ip /*= "127.0.0.1"*/, int port /*= 6379*/) {
         this->writingClient = new Redis();
     }
     if (!connectClient(this->writingClient, ip, port)) {
-        std::cout << "Can't connect Reading Client!";
+        logChannelError("Can't connect Reading Client!");
     }
     this->writingLock.unlock();
     return this->isUp();
@@ -431,14 +448,14 @@ bool Channel::sendMessageTo(long long channelId, Message *message) {
     std::string messageId = "m:" + std::to_string(this->id) + ":" + std::to_string(message->getMessageId());
     // Create message on Redis
     std::string command = "hset " + messageId + " " + message->parseMessage();
-    std::cout << "Sending command: [" << command << "]\n";
+    logChannelDebug("Sending Command: [" + command + "]");
     // Only one thread can write at a time
     RedisResponse *response = this->sendWriteCommand(command);
     if (response->hasError()) {
         if (response->getType() == NONE) {
-            std::cout << "Timeout writing message!\n";
+            logChannelWarning("Timeout writing message!");
         } else {
-            std::cout << "Error: " << response->getError() << "\n";
+            logChannelError(response->getError());
         }
         delete response;
         return false;
@@ -446,13 +463,13 @@ bool Channel::sendMessageTo(long long channelId, Message *message) {
     delete response;
     // Insert message on receiver channel 
     command = "lpush c:" + std::to_string(channelId) + " " + messageId;
-    std::cout << "Sending command: [" << command << "]\n";
+    logChannelDebug("Sending Command: [" + command + "]");
     response = this->sendWriteCommand(command);
     if (response->hasError()) {
         if (response->getType() == NONE) {
-            std::cout << "Timeout sending message!\n";
+            logChannelWarning("Timeout writing message");
         } else {
-            std::cout << "Error: " << response->getError() << "\n";
+            logChannelError(response->getError());
         }
         delete response;
         return false;
@@ -470,9 +487,9 @@ bool Channel::removeMessage(Message *message) {
     RedisResponse *response = this->sendWriteCommand("DEL " + key);
     if (response->hasError()) {
         if (response->getType() == NONE) {
-            std::cout << "Timeout deleting message!";
+            logChannelWarning("Timeout deleting message");
         } else {
-            std::cout << "Error: " << response->getError() << "\n";
+            logChannelError(response->getError());
         }
         delete response;
         return false;
@@ -488,15 +505,15 @@ bool Channel::flush() {
     RedisResponse *response = this->sendReadCommand("LLEN c:" + std::to_string(this->id));
     if (response->hasError()) {
         if (response->getType() == NONE) {
-            std::cout << "Timeout on retrieving queue length!";
+            logChannelWarning("Timeout on retrieving queue length");
         } else {
-            std::cout << "Error: " << response->getError() << "\n";
+            logChannelError(response->getError());
         }
         delete response;
         return false;
     }
     if (response->getType() != INTEGER) {
-        std::cout << "Unexpected behaviour!\n";
+        logChannelError("Unexpected behaviour from LLEN");
         return false;
     }
     int count = std::stoi(response->getContent());
@@ -504,9 +521,9 @@ bool Channel::flush() {
     response = this->sendReadCommand("LRANGE c:" + std::to_string(this->id) + " 0 " + std::to_string(count));
     if (response->hasError()) {
         if (response->getType() == NONE) {
-            std::cout << "Timeout on retrieving pending queue!\n";
+            logChannelWarning("Timeout on retrieving pending queue");
         } else {
-            std::cout << "Error: " << response->getError() << "\n";
+            logChannelError(response->getError());
         }
         delete response;
         return false;
@@ -518,9 +535,9 @@ bool Channel::flush() {
         response = this->sendWriteCommand("DEL " + messageId);
         if (response->hasError()) {
             if (response->getType() == NONE) {
-                std::cout << "Timeout on deleting message " << messageId << "\n";
+                logChannelWarning("Timeout on deleting message " + messageId);
             } else {
-                std::cout << "Error: " << response->getError() << "\n";
+                logChannelError(response->getError());
             }
             allDeleted = false;
         }
@@ -529,9 +546,9 @@ bool Channel::flush() {
     response = this->sendWriteCommand("DEL c:" + std::to_string(this->id));
     if (response->hasError()) {
         if (response->getType() == NONE) {
-            std::cout << "Timeout on deleting channel!\n";
+            logChannelWarning("Timeout on deleting channel");
         } else {
-            std::cout << "Error: " << response->getError() << "\n";
+            logChannelError(response->getError());
         }
         delete response;
         return false;
@@ -546,9 +563,9 @@ Message* Channel::readMessageWithId(std::string messageId) {
     RedisResponse *response = this->sendReadCommand("HGETALL " + messageId);
     if (response->hasError()) {
         if (response->getType() == NONE) {
-            std::cout << "Timeout on HGETALL\n";
+            logChannelWarning("Timeout on getting message data");
         } else {
-            std::cout << "Error: " << response->getError() << "\n";
+            logChannelError(response->getError());
         }
         delete response;
         return nullptr;
@@ -584,7 +601,8 @@ Message* Channel::readMessageWithId(std::string messageId) {
             m = new DisconnectMessage(messageId);
             break;
         default:
-            std::cout << "Unhandled Type: " << messageType << "\n";
+            logChannelWarning("Unhandled Type: " + std::to_string(messageType));
+            break;
     }
     if (m != nullptr) {
         m->parseResponse(response);
@@ -601,9 +619,9 @@ Message* Channel::readMessage() {
     RedisResponse *response = this->sendReadCommand("RPOP " + channelId);
     if (response->hasError()) {
         if (response->getType() == NONE) {
-            std::cout << "Timeout on RPOP\n";
+            logChannelWarning("Timeout on RPOP");
         } else {
-            std::cout << "Error: " << response->getError() << "\n"; 
+            logChannelError(response->getError()); 
         }
         delete response;
         return nullptr;
@@ -615,7 +633,7 @@ Message* Channel::readMessage() {
     }
     std::string messageId = response->getContent();
     if (!isValidMessageId(messageId)) {
-        std::cout << "Invalid message id in queue: " << messageId << "\n";
+        logChannelError(response->getError());
         delete response;
         return nullptr;        
     }
@@ -631,15 +649,15 @@ Message* Channel::awaitMessage(long timeout /* = 0*/) {
     RedisResponse *response = this->sendReadCommand("BRPOP " + channelId + " " + std::to_string(timeout));
     if (response->hasError()) {
         if (response->getType() == NONE) {
-            std::cout << "Timeout on BRPOP\n";
+            logChannelWarning("Timeout on BRPOP");
         } else {
-            std::cout << "Error: " << response->getError() << "\n";
+            logChannelError(response->getError());
         }
         delete response;
         return nullptr;
     }
     if (response->getType() != VECTOR) {
-        std::cout << "Unexpected behaviour from redis! Await Type: " << response->getType() << "\n";
+        logChannelError("Unexpected behaviour from redis. Await Type:" + std::to_string(response->getType()));
         delete response;
         return nullptr;
     }

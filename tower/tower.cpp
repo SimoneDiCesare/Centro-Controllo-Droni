@@ -46,7 +46,7 @@ Tower::Tower() : messageCounterLock() {
     this->area = new Area(this->areaWidth, this->areaHeight);
     this->x = this->areaWidth / 2;
     this->y = this->areaHeight / 2;
-    this->area->initArea(128, this->x, this->y);
+    this->area->initArea(5, this->x, this->y);
     logi("Tower Initialized");
 }
 
@@ -394,8 +394,14 @@ void Tower::calcolateDronePath(Drone drone) {
                 block.setLastX(drone.posX);
                 block.setLastY(drone.posY);
             }
-            x = block.getLastX() + block.getDirX();
-            y = block.getLastY();
+            int x = block.getLastX() + block.getDirX();
+            int y = block.getLastY();
+            logi(std::to_string(x) + "," + std::to_string(y) + " -> " + std::to_string(this->x) + "," + std::to_string(this->y));
+            if (x == this->x && y == this->y) {
+                logi("Skipping Tower Cell");
+                // Safe because the tower is in the middle
+                x += block.getDirX();
+            }
             if (x >= block.getX() + block.getWidth() || x < block.getX()) {
                 y += block.getDirY();
                 x -= block.getDirX();

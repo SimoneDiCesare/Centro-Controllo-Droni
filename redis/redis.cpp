@@ -1,4 +1,5 @@
 #include "redis.hpp"
+#include "log.hpp"
 #include <netdb.h>
 #include <netinet/tcp.h>
 #include <sys/socket.h>
@@ -91,7 +92,7 @@ void RedisResponse::setContent(std::string content) {
             std::size_t delimiter = content.find("\r\n");
             int elementCount = std::stoi(content.substr(0, delimiter));
             if (elementCount == -1) {
-                // std::cout << "Empty Array!\n";
+                logWarning("Redis", "Empty Array");
                 break;
             }
             content = content.substr(delimiter + 2);
@@ -105,7 +106,7 @@ void RedisResponse::setContent(std::string content) {
             break;
         }
         default: {
-            std::cout << "INVALID MESSAGE TYPE\n";
+            logError("Redis", "Invalid Message Type: " + std::to_string(this->type));
             break;
         }
     }
@@ -182,7 +183,6 @@ RedisResponse* Redis::sendCommand(std::string command) {
         response->setError("Data retrieving Error");
         return response;
     }
-    // std::cout << "Control Byte: " << controlByte << "\n";
     switch(controlByte[0]) {
         case '+':
             response->setType(STRING);

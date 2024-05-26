@@ -10,4 +10,4 @@ enum DroneState {
     DEAD         ///< Used from tower to decide if a drone is no longer available (fault).
 };
 
-#endif
+#endif  // GLOBAL_HPP

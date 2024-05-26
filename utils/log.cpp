@@ -44,7 +44,13 @@ void logError(std::string who, std::string message) {
 }
 
 void logDebug(std::string who, std::string message) {
-    log(who, "DEBUG", message);
+    if (debugging) {
+        log(who, "DEBUG", message);
+    }
+}
+
+void logWarning(std::string who, std::string message) {
+    log(who, "WARNING", message);
 }
 
 void logClose() {
@@ -54,7 +60,11 @@ void logClose() {
 
 void logVerbose(bool b) {
     verbose = b;
-} 
+}
+
+void logDebugging(bool b) {
+    debugging = b;
+}
 
 void logOpen(std::string file) {
     std::lock_guard<std::mutex> lock(logMutex);

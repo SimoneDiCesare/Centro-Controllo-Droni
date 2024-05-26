@@ -601,4 +601,4 @@ class Channel {
         Message* readMessageWithId(std::string messageId);
 };
 
-#endif
+#endif  // CHANNEL_HPP

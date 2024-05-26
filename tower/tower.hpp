@@ -15,13 +15,13 @@
  * This struct is used by the tower to retrieve and store db data
  */
 typedef struct Drone {
-    long long id;
-    int posX;
-    int posY;
-    long long batteryAutonomy;
-    long long batteryLife;
-    DroneState droneState;
-    long long lastUpdate;
+    long long id;               ///< id of drone.
+    int posX;                   ///< X location of drone.
+    int posY;                   ///< Y location of drone.
+    long long batteryAutonomy;  ///< Battery autonomy of drone.
+    long long batteryLife;      ///< Total battery autonomy at 100% of drone.
+    DroneState droneState;      ///< State of drone.
+    long long lastUpdate;       ///< The last time this drone has sent a message.
 } Drone;
 
 /**
@@ -85,31 +85,74 @@ class Tower {
          * @return A Drone with the specified id.
          */
         Drone getDrone(long long id);
+        /**
+         * @brief Retrieve all connected drones from db.
+         * @return A list of all connected drones.
+         */
         std::vector<Drone> getDrones();
+        /**
+         * @brief Loop that checks every minute if the drones are responsive and operative.
+         */
         void checkDrones();
-        void calcolateDronePath(Drone);
-        static bool running;
+        /**
+         * @brief Calcolate the next location for a drone.
+         * @param drone The drone to be assigned.
+         */
+        void calcolateDronePath(Drone drone);
+        /**
+         * @brief Handle a system signal
+         * @param signal The signal to handle.
+         */
         static void handleSignal(int signal);
         // Handle functions
-        void handlePing(PingMessage*);
-        void handleAssociation(AssociateMessage*);
-        void handleInfoMessage(DroneInfoMessage*);
-        void handleLocationMessage(LocationMessage*);
-        void handleRetireMessage(RetireMessage*);
-        void handleDisconnection(DisconnectMessage*);
-        // Associate Block
+        /**
+         * @brief Handle a drone ping.
+         * @param message The ping message.
+         */
+        void handlePing(PingMessage* message);
+        /**
+         * @brief Handle a drone association.
+         * @param message The association message.
+         */
+        void handleAssociation(AssociateMessage* message);
+        /**
+         * @brief Handle a drone info update.
+         * @param message The info message.
+         */
+        void handleInfoMessage(DroneInfoMessage* message);
+        /**
+         * @brief Handle a location reached by a drone.
+         * @param message The location message.
+         */
+        void handleLocationMessage(LocationMessage* message);
+        /**
+         * @brief Handle a drone retire update.
+         * @param message The retire message.
+         */
+        void handleRetireMessage(RetireMessage* message);
+        /**
+         * @brief Handle a drone disconnection.
+         * @param message The disconnect message.
+         */
+        void handleDisconnection(DisconnectMessage* message);
+        /**
+         * @brief Associate a drone to a new block.
+         * @param drone The drone to associate.
+         * 
+         * This function gets an unassigned block with a max value inside it, and associate it to a drone.
+         */
         void associateBlock(Drone drone);
         // Params
-        Channel* channel;
-        Postgre* db;
-        long long messageCounter;
-        std::mutex messageCounterLock;
-        // Area
-        Area *area;
-        int x;
-        int y;
-        int areaWidth;
-        int areaHeight;
+        static bool running;            ///< Checks if a tower is online. Is static for hanglind system signals.
+        Channel* channel;               ///< The redis channel used for comunications.
+        Postgre* db;                    ///< The postgre db used for storing useful data.
+        long long messageCounter;       ///< Counter for generating uniques messages ids.
+        std::mutex messageCounterLock;  ///< Mutex used for r/w messageCounter in safety.
+        Area *area;                     ///< The area monitored by this tower.
+        int x;                          ///< The x location on the area of the tower.
+        int y;                          ///< The y location on the area of the tower.
+        int areaWidth;                  ///< The area width.
+        int areaHeight;                 ///< The area height.
 };
 
-#endif // TOWER_HPP
+#endif  // TOWER_HPP
