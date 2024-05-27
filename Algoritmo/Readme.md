@@ -47,7 +47,7 @@ per ogni drone:
   se Morto -> disconnetti
   se Charging -> richiedi update   
   se Flying -> last update < 120 -> richiedi update 
-  se Diagonal -> lastUpdate < diagTime -> richiedi update
+  se Starting -> lastUpdate < diagTime -> richiedi update
   se Returning -> lastUpdate < diagTime -> richiedi update
 
 ---CONTROLLO DEI MESSAGGI  

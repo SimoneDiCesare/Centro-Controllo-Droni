@@ -1297,6 +1297,17 @@ INPUT /usr/local/texlive/2023/texmf-dist/tex/latex/lm/omslmr.fd
 INPUT /usr/local/texlive/2023/texmf-dist/fonts/tfm/public/lm/rm-lmri12.tfm
 INPUT /usr/local/texlive/2023/texmf-dist/fonts/enc/dvips/lm/lm-mathsy.enc
 INPUT /usr/local/texlive/2023/texmf-dist/fonts/enc/dvips/lm/lm-mathit.enc
+INPUT /usr/local/texlive/2023/texmf-dist/tex/latex/lm/ts1lmr.fd
+INPUT /usr/local/texlive/2023/texmf-dist/tex/latex/lm/ts1lmr.fd
+INPUT /usr/local/texlive/2023/texmf-dist/tex/latex/lm/ts1lmr.fd
+INPUT /usr/local/texlive/2023/texmf-dist/tex/latex/lm/ts1lmr.fd
+INPUT /usr/local/texlive/2023/texmf-dist/fonts/tfm/public/lm/ts1-lmr12.tfm
+INPUT /usr/local/texlive/2023/texmf-dist/fonts/enc/dvips/lm/lm-ts1.enc
+INPUT ./image/ER.png
+INPUT ./image/ER.png
+INPUT image/ER.png
+INPUT ./image/ER.png
+INPUT ./image/ER.png
 INPUT relazione.aux
 INPUT ./relazione.out
 INPUT ./relazione.out
