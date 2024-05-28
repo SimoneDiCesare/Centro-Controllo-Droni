@@ -23,7 +23,7 @@ DroneInfoMessage* generateDroneInfoMessage(Drone *drone, long long id) {
     info->setPosX(drone->getPosX() / 20);
     info->setPosY(drone->getPosY() / 20);
     info->setBatteryAutonomy(drone->getBatteryAutonomy());
-    info->setBatteryLife(drone->getBatteryLife());
+    info->setChargeTime(drone->getRechargeTime());
     info->setState(drone->getState());
     return info;
 }
@@ -47,6 +47,10 @@ void Drone::loge(std::string message) {
 
 void Drone::logd(std::string message) {
     logDebug("D" + std::to_string(this->id), message);
+}
+
+void Drone::logw(std::string message) {
+    logWarning("D" + std::to_string(this->id), message);
 }
 
 // Can be simplified in just Time::nanos()?
@@ -391,6 +395,16 @@ void Drone::handleMessage(Message *message) {
         // case 4: La torre non deve mandare un RetireMessage
         case 5: {
             logi("Disconnect Message");
+            DisconnectMessage *disconnect = new DisconnectMessage(this->generateMessageId());
+            this->channel->sendMessageTo(0, disconnect);
+            delete disconnect;
+            bool channelFlushed = this->channel->flush();
+            if (channelFlushed) {
+                logi("Channel Flushed!");
+            } else {
+                logw("Can't flush redis channel");
+            }
+            std::exit(0);
             break;
         }
         default: {
@@ -469,6 +483,10 @@ DroneState Drone::getState() {
     DroneState state = this->state;
     this->stateMutex.unlock();
     return state;
+}
+
+long long Drone::getRechargeTime() {
+    return this->rechargeTime;
 }
 
 int Drone::getVelocity() {

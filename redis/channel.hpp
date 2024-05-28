@@ -266,7 +266,7 @@ class DroneInfoMessage : public Message {
         /**
          * @return The total battery life of this drone in seconds.
          */
-        long long getBatteryLife();
+        long long getChargeTime();
         /**
          * @return The state of this drone.
          */
@@ -293,9 +293,9 @@ class DroneInfoMessage : public Message {
         void setBatteryAutonomy(long long batteryAutonomy);
         /**
          * @brief Set the total battery life in seconds.
-         * @param batteryLife The new batterty life in seconds.
+         * @param chargeTime The new batterty life in seconds.
          */
-        void setBatteryLife(long long batteryLife);
+        void setChargeTime(long long chargeTime);
         /**
          * @brief Set the state of thid drone.
          * @param state The new drone state.
@@ -306,7 +306,7 @@ class DroneInfoMessage : public Message {
         int posX;                  ///< The x position of the drone.
         int posY;                  ///< The y position of the drone.
         long long batteryAutonomy; ///< The battery autonomy in seconds.
-        long long batteryLife;     ///< The total battery duration in seconds.
+        long long chargeTime;     ///<  The charging time in seconds.
         DroneState state;                 ///< The drone state.
 };
 

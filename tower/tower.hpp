@@ -19,7 +19,7 @@ typedef struct Drone {
     int posX;                   ///< X location of drone.
     int posY;                   ///< Y location of drone.
     long long batteryAutonomy;  ///< Battery autonomy of drone.
-    long long batteryLife;      ///< Total battery autonomy at 100% of drone.
+    long long chargeTime;      ///< Total battery autonomy at 100% of drone.
     DroneState droneState;      ///< State of drone.
     long long lastUpdate;       ///< The last time this drone has sent a message.
 } Drone;
@@ -35,7 +35,7 @@ class Tower {
         /**
          * @brief Constructor of Tower class.
          */
-        Tower();
+        Tower(int droneCount, int areaWidth, int areaHeight);
         /**
          * @brief Destructor of Tower class.
          */
@@ -47,8 +47,14 @@ class Tower {
          */
         bool connectChannel(std::string ip, int port);
         /**
+         * @brief Creates trigger for the db.
+         * @return True if the triggers are created succesfully.
+         */
+        bool createTrigger();
+        /**
          * @brief Connects this Tower to a postgres db.
-         * @param args The arguments for the db connection. 
+         * @param args The arguments for the db connection.
+         * @return True if the connection is enstablished.
          */
         bool connectDb(const PostgreArgs args);
         /**

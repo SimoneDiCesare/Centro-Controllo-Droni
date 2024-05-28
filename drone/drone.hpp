@@ -117,6 +117,10 @@ class Drone {
          */
         double getBatteryLife();
         /**
+         * @return The chargeTime of this drone.
+         */
+        long long getRechargeTime();
+        /**
          * NOTE: This function is thread safe. @see {locationLock}
          * @return The state of this drone.
          */
@@ -168,6 +172,11 @@ class Drone {
          * @param message The message to log.
          */
         void logd(std::string message);
+        /**
+         * @brief Logs a warning message for this drone.
+         * @param message The message to log.
+         */
+        void logw(std::string message);
         /**
          * @brief Generates the next message id, incrementing the @ref{messageCounter} of this drone.
          * @return A pseudo-unique message id. 

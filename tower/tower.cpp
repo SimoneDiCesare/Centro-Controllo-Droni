@@ -30,23 +30,27 @@ void logi(std::string message) {
     logInfo("Tower", message);
 }
 
+void logw(std::string message) {
+    logWarning("Tower", message);
+}
+
 // Tower class definitions
 
 bool Tower::running = false;
 
-Tower::Tower() : messageCounterLock() {
+Tower::Tower(int droneCount, int areaWidth, int areaHeight) : messageCounterLock() {
     logi("Initializing Tower");
     this->channel = nullptr;
     this->db = nullptr;
     this->messageCounter = 0;
     // Initialize Area
     logi("Initializing Area");
-    this->areaWidth = 10;
-    this->areaHeight = 10;
+    this->areaWidth = areaWidth;
+    this->areaHeight = areaHeight;
     this->area = new Area(this->areaWidth, this->areaHeight);
     this->x = this->areaWidth / 2;
     this->y = this->areaHeight / 2;
-    this->area->initArea(5, this->x, this->y);
+    this->area->initArea(droneCount, this->x, this->y);
     logi("Tower Initialized");
 }
 
@@ -69,6 +73,67 @@ bool Tower::connectChannel(std::string ip, int port) {
     return connected;
 }
 
+bool Tower::createTrigger() {
+    std::string dropTriggers = R"(
+            DROP TRIGGER IF EXISTS drone_location_check ON drone;
+            DROP TRIGGER IF EXISTS drone_battery_check ON drone;
+        )";
+    PostgreResult result = this->db->execute(dropTriggers);
+    if (result.error) {
+        logError("DB", "Dropping Triggers: " + result.errorMessage);
+    } else {
+        logInfo("DB", "Triggers cleared");
+    }
+    std::string locationTrigger = R"(
+        CREATE OR REPLACE FUNCTION check_drone_area()
+        RETURNS TRIGGER AS $$
+        DECLARE
+            min_x INT := 0;
+            min_y INT := 0;
+            max_x INT := )" + std::to_string(this->areaWidth) + R"(;
+            max_y INT := )" + std::to_string(this->areaHeight) + R"(;
+        BEGIN
+            IF NEW.x < min_x OR NEW.x > max_x OR NEW.y < min_y OR NEW.y > max_y THEN
+                RAISE EXCEPTION 'Drone % is out of surveillance area', NEW.id;
+            END IF;
+            RETURN NEW;
+        END;
+        $$ LANGUAGE plpgsql;
+        CREATE TRIGGER drone_location_check
+        BEFORE INSERT OR UPDATE ON drone
+        FOR EACH ROW
+        EXECUTE FUNCTION check_drone_area();
+        
+    )";
+    std::string batteryTrigger = R"(
+        CREATE OR REPLACE FUNCTION check_drone_battery()
+        RETURNS TRIGGER AS $$
+        BEGIN
+            IF NEW.dstate != )" + std::to_string(CHARGING) + R"( AND NEW.dstate != )" + std::to_string(DEAD) + R"( AND NEW.battery_autonomy <= 0 THEN
+                RAISE EXCEPTION 'Drone % has no battery left but is still flying', NEW.id;
+            END IF;
+            RETURN NEW;
+        END;
+        $$ LANGUAGE plpgsql;
+        CREATE TRIGGER drone_battery_check
+        AFTER UPDATE ON drone
+        FOR EACH ROW
+        EXECUTE FUNCTION check_drone_battery();
+    )";
+    result = this->db->execute(locationTrigger);
+    bool ret = true;
+    if (result.error) {
+        logError("DB", "Location Trigger: " + result.errorMessage);
+        ret = false;
+    }
+    result = this->db->execute(batteryTrigger);
+    if (result.error) {
+        logError("DB", "Battery Trigger: " + result.errorMessage);
+        ret = false;
+    }
+    return ret;
+}
+
 bool Tower::connectDb(const PostgreArgs args) {
     this->db = new Postgre(args);
     if (this->db->isConnected()) {
@@ -79,7 +144,7 @@ bool Tower::connectDb(const PostgreArgs args) {
         x INTEGER NOT NULL,
         y INTEGER NOT NULL,
         battery_autonomy BIGINT,
-        battery_life BIGINT,
+        charge_time BIGINT,
         dstate INT,
         last_update BIGINT
         ))");
@@ -95,6 +160,11 @@ bool Tower::connectDb(const PostgreArgs args) {
             return false;
         }
         logi("Table drone Cleared");
+        if (this->createTrigger()) {
+            logi("Trigger Created");
+        } else {
+            loge("Error Creating Trigger");
+        }
         return true;
     } else {
         loge("Can't connected to db!");
@@ -108,14 +178,14 @@ std::vector<Drone> Tower::getDrones() {
         loge("Can't retrive connected drones!");
         return drones;
     }
-    PostgreResult result = this->db->execute("SELECT id, x, y, battery_autonomy, battery_life, dstate, last_update FROM drone");
+    PostgreResult result = this->db->execute("SELECT id, x, y, battery_autonomy, charge_time, dstate, last_update FROM drone");
     for (const auto& row : result.result) {
         Drone d;
         d.id = row[0].as<long long>();
         d.posX = row[1].as<int>();
         d.posY = row[2].as<int>();
         d.batteryAutonomy = row[3].as<long long>();
-        d.batteryLife = row[4].as<long long>();
+        d.chargeTime = row[4].as<long long>();
         d.droneState = static_cast<DroneState>(row[5].as<int>());
         d.lastUpdate = row[6].as<long long>();
         drones.push_back(d);
@@ -126,14 +196,14 @@ std::vector<Drone> Tower::getDrones() {
 
 Drone Tower::getDrone(long long id) {
     Drone drone;
-    PostgreResult result = this->db->execute("SELECT id, x, y, battery_autonomy, battery_life, dstate, last_update FROM drone WHERE id = " + std::to_string(id));
+    PostgreResult result = this->db->execute("SELECT id, x, y, battery_autonomy, charge_time, dstate, last_update FROM drone WHERE id = " + std::to_string(id));
     for (const auto& row : result.result) {
         if (row[0].as<long long>() == id) {
             drone.id = row[0].as<long long>();
             drone.posX = row[1].as<int>();
             drone.posY = row[2].as<int>();
             drone.batteryAutonomy = row[3].as<long long>();
-            drone.batteryLife = row[4].as<long long>();
+            drone.chargeTime = row[4].as<long long>();
             drone.droneState = static_cast<DroneState>(row[5].as<int>());
             drone.lastUpdate = row[6].as<long long>();
         }
@@ -146,30 +216,33 @@ void Tower::checkDrones() {
     long long currentTime = Time::seconds();
     long long timePassed = 0;
     for (const Drone& drone : drones) {
+        if (drone.droneState == DEAD) {
+            continue; // Skip dead drones
+        }
         timePassed = Time::seconds() - drone.lastUpdate;
         logi("Last Update for D" + std::to_string(drone.id) + ": " + std::to_string(timePassed));
-        /*if (drone.droneState.compare("waiting") == 0) {
-            logi("Sending drone to monitoring");
-            this->calcolateDronePath(drone);
-        } else if (drone.droneState.compare("monitoring") == 0) {
-            if (timePassed > std::chrono::seconds(120)) {
-                logi("Pinging drone");
+        if (timePassed > 120) {
+            if (timePassed > 300) { // Over 5' -> consider dead
+                logw("Drone " + std::to_string(drone.id) + " not responding");
+                PostgreResult result = this->db->execute("UPDATE drone SET dstate =" + std::to_string(DEAD) + " WHERE id = " + std::to_string(drone.id));
+            } else {
+                logi("Checking on Drone " + std::to_string(drone.id));
                 PingMessage *ping = new PingMessage(generateMessageId());
                 this->channel->sendMessageTo(drone.id, ping);
                 delete ping;
             }
-        } else { // Charging Drone -> request for battery update
-            logi("Checking drone with state: " + drone.droneState);
-        }*/
+        } else if (drone.droneState == READY) {
+            this->associateBlock(drone);
+        }
     }
 }
 
 void Tower::droneCheckLoop() {
-    /*while (this->running) {
+    while (this->running) {
         std::this_thread::sleep_for(std::chrono::seconds(60));
         logi("Checking Drones");
         this->checkDrones();
-    }*/
+    }
 }
 
 void Tower::areaUpdateLoop() {
@@ -244,18 +317,27 @@ void Tower::start() {
         }
     }
     logi("Powering Off");
+    // Disconnect Drones
+    std::vector<Drone> drones = this->getDrones();
+    for (Drone& drone : drones) {
+        if (drone.droneState == DEAD) {
+            continue;
+        }
+        DisconnectMessage *message = new DisconnectMessage(this->generateMessageId());
+        this->channel->sendMessageTo(drone.id, message);
+        delete message;
+    }
     // Await Spawned Threads
     for (auto& thread : threads) {
         thread.join();
     }
+    // Flush Channel
     bool channelFlushed = this->channel->flush();
     if (channelFlushed) {
         logi("Channel Flushed!");
     } else {
-        loge("Can't flush redis channel");
+        logw("Can't flush redis channel");
     }
-    // TODO: - Disconnect and release drones
-    //       - Exit with received signal 
 }
 
 long long checkDroneId(Postgre* db, long long id) {
@@ -289,7 +371,7 @@ void Tower::handleAssociation(AssociateMessage *message) {
     long long validId = checkDroneId(db, id);
     logi("Valid Drone Id found");
     // Get drones info
-    PostgreResult result = this->db->execute("INSERT INTO drone (id, x, y, battery_autonomy, battery_life, dstate, last_update) VALUES (" + std::to_string(validId) + ", 0, 0, 0, 0, " + std::to_string(WAITING) + ", " + CURRENT_TIMESTAMP + ")");
+    PostgreResult result = this->db->execute("INSERT INTO drone (id, x, y, battery_autonomy, charge_time, dstate, last_update) VALUES (" + std::to_string(validId) + ", 0, 0, 0, 0, " + std::to_string(WAITING) + ", " + CURRENT_TIMESTAMP + ")");
     if (result.error) {
         logError("DB", result.errorMessage);
     }
@@ -347,11 +429,11 @@ void Tower::handleInfoMessage(DroneInfoMessage *message) {
     drone.posX = message->getPosX();
     drone.posY = message->getPosY();
     drone.batteryAutonomy = message->getBatteryAutonomy();
-    drone.batteryLife = message->getBatteryLife();
+    drone.chargeTime = message->getChargeTime();
     drone.droneState = message->getState();
     std::string query = "UPDATE drone SET x=" + std::to_string(drone.posX)
         + ",y=" + std::to_string(drone.posY) + ",battery_autonomy=" + std::to_string(drone.batteryAutonomy)
-        + ",battery_life=" + std::to_string(drone.batteryLife) + ",dstate=" + std::to_string(drone.droneState)
+        + ",charge_time=" + std::to_string(drone.chargeTime) + ",dstate=" + std::to_string(drone.droneState)
         + ",last_update=" + CURRENT_TIMESTAMP + " WHERE id=" + std::to_string(drone.id);
     PostgreResult result = this->db->execute(query);
     if (result.error) {
@@ -396,7 +478,6 @@ void Tower::calcolateDronePath(Drone drone) {
             }
             int x = block.getLastX() + block.getDirX();
             int y = block.getLastY();
-            logi(std::to_string(x) + "," + std::to_string(y) + " -> " + std::to_string(this->x) + "," + std::to_string(this->y));
             if (x == this->x && y == this->y) {
                 logi("Skipping Tower Cell");
                 // Safe because the tower is in the middle
@@ -429,7 +510,7 @@ void Tower::handleLocationMessage(LocationMessage *message) {
     Drone drone = this->getDrone(droneId);
     drone.posX = message->getX();
     drone.posY = message->getY();
-    if (drone.posX < 0 || drone.posX >= this->areaWidth || drone.posY < 0 || drone.posY >= this->areaHeight) {
+    if (drone.posX < 0 || drone.posX > this->areaWidth || drone.posY < 0 || drone.posY > this->areaHeight) {
         loge("Drone " + std::to_string(droneId) + " out of bounds! (" + std::to_string(drone.posX) + "," + std::to_string(drone.posY) + ")");
     } else {
         this->area->operator[](drone.posX)[drone.posY] = 0;
@@ -468,7 +549,16 @@ void Tower::handleRetireMessage(RetireMessage* message) {
 }
 
 void Tower::handleDisconnection(DisconnectMessage* message) {
-    logi("Drone " + std::to_string(message->getChannelId()) + " disconnecting");
+    long long droneId = message->getChannelId();
+    std::string droneIdText = std::to_string(droneId);
+    logi("Drone " + droneIdText + " disconnected");
+    PostgreResult result = this->db->execute("DELETE FROM drone WHERE id = " + droneIdText);
+    if (result.error) {
+        logError("DB", result.errorMessage);
+        loge("Can't clear db entry for Drone " + droneIdText);
+    } else {
+        logi("Drone " + droneIdText + " entry cleared");
+    }
 }
 
 void Tower::handleMessage(Message* message) {

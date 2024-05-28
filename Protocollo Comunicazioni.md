@@ -112,7 +112,7 @@ I parametri del messaggio sono i campi del drone:
 - **x**
 - **y**
 - **drone_state**
-- **battery_life**
+- **charge_time**
 - **battery_autonomy**
 #### LocationMessage
 Messaggio con duplice scopo:

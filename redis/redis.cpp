@@ -92,7 +92,7 @@ void RedisResponse::setContent(std::string content) {
             std::size_t delimiter = content.find("\r\n");
             int elementCount = std::stoi(content.substr(0, delimiter));
             if (elementCount == -1) {
-                logWarning("Redis", "Empty Array");
+                // logWarning("Redis", "Empty Array");
                 break;
             }
             content = content.substr(delimiter + 2);

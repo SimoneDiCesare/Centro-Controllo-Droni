@@ -173,7 +173,7 @@ DroneInfoMessage::DroneInfoMessage(std::string id) : Message(id) {
     this->posX = 0;
     this->posY = 0;
     this->batteryAutonomy = 0;
-    this->batteryLife = 0;
+    this->chargeTime = 0;
     this->state = READY;
 }
 
@@ -182,7 +182,7 @@ DroneInfoMessage::DroneInfoMessage(long long messageId) : Message(messageId) {
     this->posX = 0;
     this->posY = 0;
     this->batteryAutonomy = 0;
-    this->batteryLife = 0;
+    this->chargeTime = 0;
     this->state = READY;
 } 
 
@@ -205,10 +205,10 @@ void DroneInfoMessage::parseResponse(RedisResponse* response) {
                 this->posX = std::stoi(value);
             } else if (key.compare("y") == 0) {
                 this->posY = std::stoi(value);
-            } else if (key.compare("batteryAutonomy") == 0) {
+            } else if (key.compare("battery_autonomy") == 0) {
                 this->batteryAutonomy = std::stoll(value);
-            } else if (key.compare("batteryLife") == 0) {
-                this->batteryLife = std::stoll(value);
+            } else if (key.compare("charge_time") == 0) {
+                this->chargeTime = std::stoll(value);
             } else if (key.compare("state") == 0) {
                 this->state = static_cast<DroneState>(std::stoi(value));
             }
@@ -222,7 +222,7 @@ std::string DroneInfoMessage::parseMessage() {
     message += " x " + std::to_string(this->posX);
     message += " y " + std::to_string(this->posY);
     message += " battery_autonomy " + std::to_string(this->batteryAutonomy);
-    message += " battery_life " + std::to_string(this->batteryLife);
+    message += " charge_time " + std::to_string(this->chargeTime);
     message += " state " + std::to_string(this->state);
     return message;
 }
@@ -245,8 +245,8 @@ long long DroneInfoMessage::getBatteryAutonomy() {
     return this->batteryAutonomy;
 }
 
-long long DroneInfoMessage::getBatteryLife() {
-    return this->batteryLife;
+long long DroneInfoMessage::getChargeTime() {
+    return this->chargeTime;
 }
 
 DroneState DroneInfoMessage::getState() {
@@ -271,8 +271,8 @@ void DroneInfoMessage::setBatteryAutonomy(long long batteryAutonomy) {
     this->batteryAutonomy = batteryAutonomy;
 }
 
-void DroneInfoMessage::setBatteryLife(long long batteryLife) {
-    this->batteryLife = batteryLife;
+void DroneInfoMessage::setChargeTime(long long chargeTime) {
+    this->chargeTime = chargeTime;
 }
 
 void DroneInfoMessage::setState(DroneState state) {
@@ -499,7 +499,7 @@ bool Channel::removeMessage(Message *message) {
 }
 
 bool Channel::flush() {
-    if (!this->canWrite()) {
+    if (!this->isUp()) {
         return false;
     }
     RedisResponse *response = this->sendReadCommand("LLEN c:" + std::to_string(this->id));
@@ -526,6 +526,10 @@ bool Channel::flush() {
             logChannelError(response->getError());
         }
         delete response;
+        return false;
+    }
+    if (response->getType() != VECTOR) {
+        logChannelError("unexpected behaviour from LRANGE");
         return false;
     }
     std::vector<std::string> pendingMessages = response->getVectorContent();
