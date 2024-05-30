@@ -61,6 +61,6 @@ bool Postgre::isConnected() {
 
 void Postgre::disconnect() {
     if (this->conn != nullptr) {
-        this->conn->close();
+        this->conn->close(); // richiede pqxx 7. altrimenti cambia "close" con "disconnect"
     }
 }
