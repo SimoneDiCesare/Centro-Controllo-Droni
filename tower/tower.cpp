@@ -4,6 +4,7 @@
 #include "log.hpp"
 #include "time.hpp"
 #include "globals.hpp"
+#include "drawer.hpp"
 #include <iostream>
 #include <csignal>
 #include <cstdlib>
@@ -294,6 +295,8 @@ void Tower::start() {
     threads.emplace_back(&Tower::droneCheckLoop, this);
     threads.emplace_back(&Tower::areaUpdateLoop, this);
     logi("Tower online");
+    std::cout << "Init Draw " << getpid() << "\n";
+    Drawer::init(this->areaWidth, this->areaHeight);
     while (this->running) {
         // 1' of waiting before restarting the cycle
         Message *message = this->channel->awaitMessage(10);
@@ -315,6 +318,9 @@ void Tower::start() {
                 it = threads.erase(it);
             }
         }
+        // Update GUI
+        std::cout << "Drawing " << getpid() << "\n";
+        Drawer::drawGrid(this->area->getMatrix(), this->areaWidth, this->areaHeight);
     }
     logi("Powering Off");
     // Disconnect Drones
@@ -338,6 +344,8 @@ void Tower::start() {
     } else {
         logw("Can't flush redis channel");
     }
+    std::cout << "Close Draw " << getpid() << "\n";
+    Drawer::close();
 }
 
 long long checkDroneId(Postgre* db, long long id) {

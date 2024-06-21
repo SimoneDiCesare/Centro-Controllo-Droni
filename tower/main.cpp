@@ -5,11 +5,12 @@
 #include "channel.hpp"
 #include "area.hpp"
 #include "time.hpp"
+#include "drawer.hpp"
 #include <cmath>
 #include <chrono>
 
 // TODO: - Argument parsing
-// ./bin/tower_exe DRONE_NUMBER AREA_WIDTH AREA_HEIGHT log_file
+// ./bin/tower_exe DRONE_NUMBER AREA_WIDTH AREA_HEIGHT gui
 int main(int argc, char* argv[]) {
     std::string logFile = "tower - " + std::to_string(Time::nanos()) + ".log";
     if (argc >= 5) {

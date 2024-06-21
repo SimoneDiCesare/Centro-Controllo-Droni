@@ -219,3 +219,7 @@ std::string Area::toString() {
 std::vector<Block>* Area::getBlocks() {
     return this->blocks;
 }
+
+int** Area::getMatrix() {
+    return this->matrix;
+}

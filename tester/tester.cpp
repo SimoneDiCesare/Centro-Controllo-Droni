@@ -37,39 +37,9 @@ void createThreadsInProcess() {
     }
 }
 
-int main(int argc, char* argv[]) {
-
-    std::string command = "./bin/tower_exe"; 
-    // Esegui il comando utilizzando std::system
-    int exit_code = std::system(command.c_str());
-
-    // Verifica il codice di uscita del comando
-    if (exit_code == 0) {
-        std::cout << "Comando eseguito con successo." << std::endl;
-    } else {
-        std::cerr << "Errore nell'esecuzione del comando." << std::endl;
-    }
-
-    pid_t pid = fork(); // Creazione di un processo figlio usando fork()
-
-    if (pid < 0) {
-        std::cerr << "Errore nella creazione del processo figlio.\n";
-        return 1; // Esce dal programma in caso di errore nella creazione del processo
-    }
-
-    if (pid == 0) {
-        // Questo è il processo figlio
-        std::cout << "Sono il processo figlio, PID: " << getpid() << "\n";
-        createThreadsInProcess(); // Chiama la funzione per creare e gestire i thread nel processo figlio
-    } else {
-        // Questo è il processo padre
-        std::cout << "Sono il processo padre, PID: " << getpid() << "\n";
-        wait(nullptr); // Processo padre aspetta la terminazione del processo figlio
-    }
-    
+void checkLogs() {
     // Directory di cui vogliamo elencare i file
     std::string directory_path = "./";
-
     try {
         // Iteriamo attraverso tutti i file nella directory specificata
         for (const auto& entry : fs::directory_iterator(directory_path)) {
@@ -111,6 +81,53 @@ int main(int argc, char* argv[]) {
     } catch (const fs::filesystem_error& ex) {
         std::cerr << "Errore durante la lettura della directory: " << ex.what() << std::endl;
     }
+}
 
+int main(int argc, char* argv[]) {
+    pid_t tpid = fork();
+    if (tpid < 0) {
+        std::cout << "Errore nella creazione del processo TORRE\n";
+        return -1;
+    } else if (tpid == 0) {
+        // Child -> run tower
+        // TODO: Generate tower params
+        const char *argv[] = {"./bin/tower_gui", NULL};
+
+        // Sostituisce il processo figlio con tower_exe
+        if (execvp(argv[0], (char *const *)argv) == -1) {
+            std::cerr << "Errore nell'esecuzione di execvp\n";
+            return -1;
+        }
+    } else {
+        // Father -> spawn drones
+        std::cout << "TORRE on " << tpid << "\n";
+        pid_t dpid = fork();
+        if (dpid < 0) {
+            // Can't spawn drones -> interrupt tower
+            std::cout << "Errore nella creazione del processo DRONI\n";
+            kill(tpid, SIGINT);
+            return -1;
+        } else if (dpid == 0) {
+            // Child -> spawn drones
+            createThreadsInProcess();
+        } else { // Father
+            std::cout << "DRONI on " << dpid << "\n";
+            // Wait 30'' of simulation, then interrupt 
+            sleep(30);
+            kill(tpid, SIGINT);
+            // Wait all process to finish
+            while (true) {
+                int status;
+                pid_t done = wait(&status);
+                if (done == -1) {
+                    if (errno == ECHILD) break; // no more child processes
+                    else {
+                        std::cout << done << " exited with status " << status << "\n";
+                    }
+                }
+            }
+            checkLogs();
+        }
+    }
     return 0; 
 }

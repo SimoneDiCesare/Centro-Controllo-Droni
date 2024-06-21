@@ -186,6 +186,10 @@ class Area {
          * @return The max value inside a block.
          */
         int getMaxIn(Block block);
+        /**
+         * @return The matrix pf this area.
+        */
+        int** getMatrix();
     private:
         int width;                  ///< The width of the area.
         int height;                 ///< The height of the area.
