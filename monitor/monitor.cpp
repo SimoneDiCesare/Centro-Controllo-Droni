@@ -3,11 +3,13 @@
 #include <string>
 #include <vector>
 
-int main () {
-    std::string fileName;
-    std::cout << "Inserire file .log: ";
-    std::getline(std::cin, fileName); 
-    std::cout << "\n";
+int main(int argc, char* argv[]) {
+
+    std::string fileName = std::string(argv[1]) + " " + std::string(argv[2]) + " " + std::string(argv[3]);
+
+    //std::cout << "Inserire file .log: ";
+    //std::getline(std::cin, fileName); 
+    //std::cout << "\n";
     std::ifstream fileLog(fileName);
 
     if (!fileLog.is_open()) {
