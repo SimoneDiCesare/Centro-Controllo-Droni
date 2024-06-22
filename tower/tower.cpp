@@ -247,16 +247,19 @@ void Tower::droneCheckLoop() {
 }
 
 void Tower::areaUpdateLoop() {
+    Drawer::init(this->areaWidth, this->areaHeight);
     long long start = Time::nanos();
     // Not Thread Safe -> does not create problems
     while (this->running) {
         // Arbitrary 10 seconds for growing up areas
-        std::this_thread::sleep_for(std::chrono::seconds(10));
+        std::this_thread::sleep_for(std::chrono::seconds(5));
         for (int i = 0; i < this->areaWidth; i++) {
             for (int j = 0; j < this->areaHeight; j++) {
                 this->area->operator[](i)[j] = this->area->operator[](i)[j] + 1;
             }
         }
+        // Update GUI
+        Drawer::drawGrid(this->area->getMatrix(), this->areaWidth, this->areaHeight);
     }
     long long end = Time::nanos();
     // Calculate Area Media Value
@@ -279,6 +282,7 @@ void Tower::areaUpdateLoop() {
     float sec = (end - start) / 1e9;
     logi("Average values: " + std::to_string(avg) + " in " + std::to_string(sec) + "s");
     logi("Max: " + std::to_string(max) + ", Min" + std::to_string(min));
+    Drawer::close();
 }
 
 void Tower::start() {
@@ -295,8 +299,6 @@ void Tower::start() {
     threads.emplace_back(&Tower::droneCheckLoop, this);
     threads.emplace_back(&Tower::areaUpdateLoop, this);
     logi("Tower online");
-    std::cout << "Init Draw " << getpid() << "\n";
-    Drawer::init(this->areaWidth, this->areaHeight);
     while (this->running) {
         // 1' of waiting before restarting the cycle
         Message *message = this->channel->awaitMessage(10);
@@ -318,9 +320,6 @@ void Tower::start() {
                 it = threads.erase(it);
             }
         }
-        // Update GUI
-        std::cout << "Drawing " << getpid() << "\n";
-        Drawer::drawGrid(this->area->getMatrix(), this->areaWidth, this->areaHeight);
     }
     logi("Powering Off");
     // Disconnect Drones
@@ -344,8 +343,6 @@ void Tower::start() {
     } else {
         logw("Can't flush redis channel");
     }
-    std::cout << "Close Draw " << getpid() << "\n";
-    Drawer::close();
 }
 
 long long checkDroneId(Postgre* db, long long id) {

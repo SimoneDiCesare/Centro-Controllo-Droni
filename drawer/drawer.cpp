@@ -15,12 +15,14 @@ void Drawer::drawGrid(int** grid, int width, int height) {
     int cellHeight = 720 / height;
     for (int x = 0; x < width; x++) {
         for (int y = 0; y < height; y++) {
-            std::cout << grid[x][y] << "\n";
+            // std::cout << grid[x][y] << "\n";
             int redValue = grid[x][y];
-            if (redValue >= 255) {
-                redValue = 254;
+            // Map red value
+            redValue *= (int)((redValue / 64.f) * 255);
+            if (redValue > 255) {
+                redValue = 255;
             }
-            int blueValue = 254 - redValue;
+            int blueValue = 255 - redValue;
             Color color = { (unsigned char)(redValue), 0, (unsigned char)(blueValue), 255};
             DrawRectangle(x * cellWidth, y * cellHeight, cellWidth, cellHeight, color);
         }

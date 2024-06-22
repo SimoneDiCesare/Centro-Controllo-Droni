@@ -113,7 +113,7 @@ int main(int argc, char* argv[]) {
         } else { // Father
             std::cout << "DRONI on " << dpid << "\n";
             // Wait 30'' of simulation, then interrupt 
-            sleep(30);
+            sleep(3 * 60);
             kill(tpid, SIGINT);
             // Wait all process to finish
             while (true) {
