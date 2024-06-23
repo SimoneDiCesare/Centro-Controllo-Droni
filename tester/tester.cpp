@@ -1,17 +1,16 @@
-
 #include <random>
 #include <iostream>
 #include <unistd.h>
 #include <sys/wait.h>
 #include <pthread.h>
 #include <filesystem>
+#include <cstring>
 namespace fs = std::filesystem;
 
 
-// Numero di thread da creare per ogni processo
-const int NUM_THREADS = 5;
-int NUMS_DRONS = 100;
-int eS = 1;
+
+int NUMS_DRONS = 12;
+float eS = 1;
 
 // Funzione eseguita da ciascun thread
 void* threadFunction(void* arg) {
@@ -27,10 +26,10 @@ void* threadFunction(void* arg) {
 
 // Funzione per creare e gestire i thread nel processo figlio
 void createThreadsInProcess() {
-    pthread_t threads[NUM_THREADS]; // Array di thread
+    pthread_t threads[NUMS_DRONS]; // Array di thread
 
     // Ciclo per creare NUM_THREADS thread
-    for (long i = 0; i < NUM_THREADS; ++i) {
+    for (long i = 0; i < NUMS_DRONS; ++i) {
         // Creazione del thread
         if (pthread_create(&threads[i], nullptr, threadFunction, (void*)i) != 0) {
             std::cerr << "Errore nella creazione del thread " << i << "\n";
@@ -39,7 +38,7 @@ void createThreadsInProcess() {
     }
 
     // Ciclo per attendere la terminazione di tutti i thread
-    for (int i = 0; i < NUM_THREADS; ++i) {
+    for (int i = 0; i < NUMS_DRONS; ++i) {
         pthread_join(threads[i], nullptr); // Attende la terminazione del thread i
     }
 }
@@ -95,10 +94,11 @@ int main(int argc, char* argv[]) {
         eS = std::stof(argv[1]);
     } 
 
-    if (argv[2] == "y" || argv[2] == "yes"){
+    if (argc >= 3 && (strcmp(argv[2], "y") == 0 || strcmp(argv[2], "yes") == 0)){
+        std::cerr << "DAJE ROMA DAJE" << std::endl;
         std::random_device rd;  
         std::mt19937 gen(rd()); 
-        std::uniform_int_distribution<> dis(100, 10000);
+        std::uniform_int_distribution<> dis(1, 12);
         int randomNumber = dis(gen);
         NUMS_DRONS = randomNumber;
     }
@@ -110,8 +110,8 @@ int main(int argc, char* argv[]) {
     } else if (tpid == 0) {
         // Child -> run tower
         // TODO: Generate tower params
-        std::string numDronsStr = std::to_string(NUMS_DRONS);
-        const char *argv[] = {"./bin/tower_gui", numDronsStr.c_str(), NULL};
+
+        const char *argv[] = {"./bin/tower_gui",  NULL};
 
         // Sostituisce il processo figlio con tower_exe
         if (execvp(argv[0], (char *const *)argv) == -1) {
@@ -151,3 +151,4 @@ int main(int argc, char* argv[]) {
     }
     return 0; 
 }
+
