@@ -1,3 +1,5 @@
+
+#include <random>
 #include <iostream>
 #include <unistd.h>
 #include <sys/wait.h>
@@ -8,13 +10,18 @@ namespace fs = std::filesystem;
 
 // Numero di thread da creare per ogni processo
 const int NUM_THREADS = 5;
+int NUMS_DRONS = 100;
+int eS = 1;
 
 // Funzione eseguita da ciascun thread
 void* threadFunction(void* arg) {
     long threadId = (long) arg;
     std::cout << "Thread " << threadId << " è in esecuzione\n";
-    std::string command = "./bin/drone_exe";
-    int exit_code = std::system(command.c_str()); // Esegui il comando system per avviare il processo ./bin/drone_exe
+
+    std::string executable = "./bin/drone_exe";
+    std::string parameter = std::to_string(eS);
+    std::string command = executable + " " + parameter;
+    int exit_code = std::system(command.c_str());
     return nullptr; // Termina il thread
 }
 
@@ -80,10 +87,22 @@ void checkLogs() {
         }
     } catch (const fs::filesystem_error& ex) {
         std::cerr << "Errore durante la lettura della directory: " << ex.what() << std::endl;
-    }
-}
+    }}
 
 int main(int argc, char* argv[]) {
+
+    if (argc >= 2) {
+        eS = std::stof(argv[1]);
+    } 
+
+    if (argv[2] == "y" || argv[2] == "yes"){
+        std::random_device rd;  
+        std::mt19937 gen(rd()); 
+        std::uniform_int_distribution<> dis(100, 10000);
+        int randomNumber = dis(gen);
+        NUMS_DRONS = randomNumber;
+    }
+
     pid_t tpid = fork();
     if (tpid < 0) {
         std::cout << "Errore nella creazione del processo TORRE\n";
@@ -91,7 +110,8 @@ int main(int argc, char* argv[]) {
     } else if (tpid == 0) {
         // Child -> run tower
         // TODO: Generate tower params
-        const char *argv[] = {"./bin/tower_gui", NULL};
+        std::string numDronsStr = std::to_string(NUMS_DRONS);
+        const char *argv[] = {"./bin/tower_gui", numDronsStr.c_str(), NULL};
 
         // Sostituisce il processo figlio con tower_exe
         if (execvp(argv[0], (char *const *)argv) == -1) {

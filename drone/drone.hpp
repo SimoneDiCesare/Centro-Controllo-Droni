@@ -41,7 +41,7 @@ class Drone {
         /**
          * @brief Starts this drone's functionalities.
          */
-        void start();
+        void start(float executionSpeed);
         /**
          * @brief Set a destination for the drone.
          * @param x The x location.
@@ -76,6 +76,12 @@ class Drone {
          * @brief Set the y location in safety.
          * @see {positionLock}
          * @param posX The new y location.
+         */
+        void setExecutionSpeed (float eS);
+        /**
+         * @brief Set the ExecutionSpeed.
+         * @see {positionLock}
+         * @param eS is Execution Speed.
          */
         void setPosY(double posY);
         /**
@@ -151,6 +157,7 @@ class Drone {
         std::mutex stateMutex;          ///< Mutex for r/w drone state in safety. 
         DroneState state;               ///< State of drone.
         int velocity;                   ///< Velocity of drone.
+        float executionSpeed;   	    ///< execution Speed of system.
         // Utility functions
         /**
          * @brief Generate a random id for a new drone using the current timestamp.

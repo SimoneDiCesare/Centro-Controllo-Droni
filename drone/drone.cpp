@@ -89,6 +89,7 @@ Drone::Drone(long long id) : messageCounterLock(), destinationLock(),
     this->destX = 0;
     this->destY = 0;
     this->velocity = 30; // km/h
+    this->executionSpeed = 0;
 }
 
 Drone::~Drone() {
@@ -155,7 +156,10 @@ bool Drone::connectToTower() {
     return true;
 }
 
-void Drone::start() {
+void Drone::start(float executionSpeed) {
+
+    setExecutionSpeed(executionSpeed);
+
     // Enstablish connection to tower
     bool connectedToTower = this->connectToTower();
     if (!connectedToTower) {
@@ -280,8 +284,8 @@ void Drone::move(double delta) {
     double speedY = deltaY / dist;
     double dx = speedX * delta * velocity;
     double dy = speedY * delta * velocity;
-    posX += dx;
-    posY += dy;
+    posX += dx * this -> executionSpeed;
+    posY += dy * this -> executionSpeed;
     // Check Bounderies
     if (dx > 0 && destX < posX) { // Going right -> check right limit
         posX = destX;
@@ -297,7 +301,7 @@ void Drone::move(double delta) {
     this->posX = posX;
     this->posY = posY;
     this->positionLock.unlock();
-    this->batteryAutonomy -= delta;
+    this->batteryAutonomy -= delta * this -> executionSpeed;
 }
 
 void Drone::behaviourLoop() {
@@ -311,7 +315,7 @@ void Drone::behaviourLoop() {
         this->checkBattery();
         switch(this->getState()) {
             case CHARGING:
-                this->charge += delta;
+                this->charge += delta * this -> executionSpeed;
                 if (this->charge >= this->rechargeTime) {
                     logi("Charge Ended");
                     this->batteryAutonomy = this->batteryLife;
@@ -328,7 +332,7 @@ void Drone::behaviourLoop() {
             case WAITING:
                 // Waiting a new location.
                 // Consume Battery
-                this->batteryAutonomy -= delta;
+                this->batteryAutonomy -= delta * this -> executionSpeed;
                 break;
             case MONITORING:
                 // Move to location and monitor.
@@ -448,6 +452,10 @@ void Drone::setState(DroneState state) {
     this->stateMutex.lock();
     this->state = state;
     this->stateMutex.unlock();
+}
+
+void Drone::setExecutionSpeed(float es){
+    this -> executionSpeed = es;
 }
 
 // Getter
