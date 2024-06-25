@@ -40,6 +40,9 @@ class Drone {
         bool connectToTower();
         /**
          * @brief Starts this drone's functionalities.
+         * @param executionSpeed The speed factor for simulation.
+         *          A factor grather than 1 means the drone moves, charges and disharge faster.
+         *          A factor less than 1 means the drone moves, charges and discharges slower.
          */
         void start(float executionSpeed);
         /**
@@ -157,7 +160,7 @@ class Drone {
         std::mutex stateMutex;          ///< Mutex for r/w drone state in safety. 
         DroneState state;               ///< State of drone.
         int velocity;                   ///< Velocity of drone.
-        float executionSpeed;   	    ///< execution Speed of system.
+        float executionSpeed;   	    ///< Execution Speed of simulation.
         // Utility functions
         /**
          * @brief Generate a random id for a new drone using the current timestamp.

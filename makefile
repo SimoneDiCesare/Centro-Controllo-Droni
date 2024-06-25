@@ -79,7 +79,7 @@ $(BIN_DIR)/drone_exe: $(DRONE_OBJS) $(REDIS_OBJS) $(UTILITY_OBJS)
 $(BIN_DIR)/monitor_exe: $(MONITOR_OBJS)
 	$(CC) $(CCFLAGS) -o $@ $^ $(LIBS)
 
-$(BIN_DIR)/tester_exe: $(TESTER_OBJS)
+$(BIN_DIR)/tester_exe: $(TESTER_OBJS) utils/log.cpp
 	$(CC) $(CCFLAGS) -o $@ $^ $(LIBS)
 
 .PHONY: all clean

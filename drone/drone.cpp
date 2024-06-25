@@ -158,7 +158,7 @@ bool Drone::connectToTower() {
 
 void Drone::start(float executionSpeed) {
 
-    setExecutionSpeed(executionSpeed);
+    this->setExecutionSpeed(executionSpeed);
 
     // Enstablish connection to tower
     bool connectedToTower = this->connectToTower();
@@ -284,8 +284,8 @@ void Drone::move(double delta) {
     double speedY = deltaY / dist;
     double dx = speedX * delta * velocity;
     double dy = speedY * delta * velocity;
-    posX += dx * this -> executionSpeed;
-    posY += dy * this -> executionSpeed;
+    posX += dx * this->executionSpeed;
+    posY += dy * this->executionSpeed;
     // Check Bounderies
     if (dx > 0 && destX < posX) { // Going right -> check right limit
         posX = destX;
@@ -301,7 +301,7 @@ void Drone::move(double delta) {
     this->posX = posX;
     this->posY = posY;
     this->positionLock.unlock();
-    this->batteryAutonomy -= delta * this -> executionSpeed;
+    this->batteryAutonomy -= delta * this->executionSpeed;
 }
 
 void Drone::behaviourLoop() {
@@ -315,7 +315,7 @@ void Drone::behaviourLoop() {
         this->checkBattery();
         switch(this->getState()) {
             case CHARGING:
-                this->charge += delta * this -> executionSpeed;
+                this->charge += delta * this->executionSpeed;
                 if (this->charge >= this->rechargeTime) {
                     logi("Charge Ended");
                     this->batteryAutonomy = this->batteryLife;
@@ -332,7 +332,7 @@ void Drone::behaviourLoop() {
             case WAITING:
                 // Waiting a new location.
                 // Consume Battery
-                this->batteryAutonomy -= delta * this -> executionSpeed;
+                this->batteryAutonomy -= delta * this->executionSpeed;
                 break;
             case MONITORING:
                 // Move to location and monitor.
@@ -454,8 +454,8 @@ void Drone::setState(DroneState state) {
     this->stateMutex.unlock();
 }
 
-void Drone::setExecutionSpeed(float es){
-    this -> executionSpeed = es;
+void Drone::setExecutionSpeed(float executionSpeed){
+    this->executionSpeed = executionSpeed;
 }
 
 // Getter

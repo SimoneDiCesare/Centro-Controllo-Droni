@@ -247,7 +247,7 @@ void Tower::droneCheckLoop() {
 }
 
 void Tower::drawGrid() {
-    Drawer::init(this->areaWidth, this->areaHeight);
+    Drawer::init();
     while (this->running && !Drawer::shouldClose()) {
         // Update GUI
         Drawer::drawGrid(this->area->getMatrix(), this->areaWidth, this->areaHeight);
@@ -288,7 +288,6 @@ void Tower::areaUpdateLoop() {
     float sec = (end - start) / 1e9;
     logi("Average values: " + std::to_string(avg) + " in " + std::to_string(sec) + "s");
     logi("Max: " + std::to_string(max) + ", Min" + std::to_string(min));
-    Drawer::close();
 }
 
 void Tower::start() {

@@ -3,7 +3,7 @@
 
 class Drawer {
     public:
-        static void init(int width, int height);
+        static void init();
         static bool shouldClose();
         static void drawGrid(int** grid, int width, int height);
         static void close();

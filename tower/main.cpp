@@ -10,7 +10,7 @@
 #include <chrono>
 
 // TODO: - Argument parsing
-// ./bin/tower_exe DRONE_NUMBER AREA_WIDTH AREA_HEIGHT gui
+// ./bin/tower_exe DRONE_NUMBER
 int main(int argc, char* argv[]) {
     std::string logFile = "tower - " + std::to_string(Time::nanos()) + ".log";
     if (argc >= 5) {
@@ -18,22 +18,11 @@ int main(int argc, char* argv[]) {
     }
     logVerbose(true);
     logOpen(logFile);
-    for (int i = 0; i < argc; i++) {
-        logInfo("Init", std::to_string(i) + ") " + std::string(argv[i]));
-    }
-    int droneCount;
-    int areaWidth;
-    int areaHeight;
-    if (argc < 4) {
-        logInfo("Init", "Using Default Parameters 10 10 10");
-        droneCount = 10;
-        areaWidth = 10;
-        areaHeight = 10;
-    } else {
-        droneCount = std::stoi(argv[1]);
-        areaWidth = std::stoi(argv[2]);
-        areaHeight = std::stoi(argv[3]);
-    }
+    int droneCount = (argc >= 2)? std::stoi(argv[1]) : 100;
+    // 6km -> 6000m -> 6000/GRID_FACTOR = Cell_Count
+    int areaWidth = 500 / GRID_FACTOR;
+    int areaHeight = 500 / GRID_FACTOR;
+    logInfo("Init", "Running tower with: " + std::to_string(droneCount) + " " + std::to_string(areaWidth) + " " + std::to_string(areaHeight));
     PostgreArgs args;
     args.dbname = "towerdb";
     args.user = "tower";

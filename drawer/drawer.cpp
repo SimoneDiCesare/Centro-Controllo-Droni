@@ -4,15 +4,15 @@
 #ifdef GUI
 #include "raylib.h"
 
-void Drawer::init(int width, int height) {
+void Drawer::init() {
     InitWindow(1080, 720, "Grid");
 }
 
 void Drawer::drawGrid(int** grid, int width, int height) {
     BeginDrawing();
     ClearBackground(RAYWHITE);
-    int cellWidth = 1080 / width;
-    int cellHeight = 720 / height;
+    float cellWidth = 1080.f / width;
+    float cellHeight = 720.f / height;
     for (int x = 0; x < width; x++) {
         for (int y = 0; y < height; y++) {
             // std::cout << grid[x][y] << "\n";
@@ -24,7 +24,9 @@ void Drawer::drawGrid(int** grid, int width, int height) {
             }
             int blueValue = 255 - redValue;
             Color color = { (unsigned char)(redValue), 0, (unsigned char)(blueValue), 255};
-            DrawRectangle(x * cellWidth, y * cellHeight, cellWidth, cellHeight, color);
+            DrawRectangleV((Vector2){x * cellWidth, y * cellHeight}, (Vector2){cellWidth, cellHeight}, color);
+            // std::cout << x * cellWidth << "," << y * cellHeight << "," << cellWidth << "," << cellHeight << "\n";
+            // DrawRectangle(x * cellWidth, y * cellHeight, cellWidth, cellHeight, color);
         }
     }
     EndDrawing();
@@ -40,7 +42,7 @@ void Drawer::close() {
 
 #else // !GUI
 
-void Drawer::init(int width, int height) {
+void Drawer::init() {
     std::cout << "Can't display GUI in a non gui environment\n";
 }
 

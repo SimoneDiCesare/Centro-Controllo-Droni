@@ -7,19 +7,15 @@
 #include "time.hpp"
 
 int main(int argc, char* argv[]){
-    logVerbose(true);
+    logVerbose(false);
     logOpen("drone - " + std::to_string(Time::nanos()) + ".log");
-
     float executionSpeed = 1;
-    for (int i = 0; i < argc; i++) {
-        logInfo("Init", std::to_string(i) + ") " + std::string(argv[i]));
-    }
-
     if (argc < 2) {
-        logInfo("Init", "Using Default Parameters 1 ");
+        logInfo("Init", "Using Default Execution Speed: 1");
         executionSpeed = 1;   
     } else {
-        executionSpeed = std::stoi(argv[1]);
+        executionSpeed = std::stof(argv[1]);
+        logInfo("Init", "Uscing Execution Speed: " + std::to_string(executionSpeed));
     }
 
     Drone drone;
