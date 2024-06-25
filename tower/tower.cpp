@@ -246,8 +246,16 @@ void Tower::droneCheckLoop() {
     }
 }
 
-void Tower::areaUpdateLoop() {
+void Tower::drawGrid() {
     Drawer::init(this->areaWidth, this->areaHeight);
+    while (this->running && !Drawer::shouldClose()) {
+        // Update GUI
+        Drawer::drawGrid(this->area->getMatrix(), this->areaWidth, this->areaHeight);
+    }
+    Drawer::close();
+}
+
+void Tower::areaUpdateLoop() {
     long long start = Time::nanos();
     // Not Thread Safe -> does not create problems
     while (this->running) {
@@ -258,8 +266,6 @@ void Tower::areaUpdateLoop() {
                 this->area->operator[](i)[j] = this->area->operator[](i)[j] + 1;
             }
         }
-        // Update GUI
-        Drawer::drawGrid(this->area->getMatrix(), this->areaWidth, this->areaHeight);
     }
     long long end = Time::nanos();
     // Calculate Area Media Value
@@ -298,6 +304,7 @@ void Tower::start() {
     std::vector<std::thread> threads;
     threads.emplace_back(&Tower::droneCheckLoop, this);
     threads.emplace_back(&Tower::areaUpdateLoop, this);
+    threads.emplace_back(&Tower::drawGrid, this);
     logi("Tower online");
     while (this->running) {
         // 1' of waiting before restarting the cycle

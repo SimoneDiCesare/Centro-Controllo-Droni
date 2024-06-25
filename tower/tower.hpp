@@ -81,10 +81,17 @@ class Tower {
          */
         long long generateMessageId();
         /**
-         * @brief TODO
+         * @brief Function executed each step for checking each drone state.
          */
         void droneCheckLoop();
+        /**
+         * @brief For simulation purpose: increments the values of the area for calculating a weight of each cells. 
+         */
         void areaUpdateLoop();
+        /**
+         * @brief For simulation purpose: shows up the grid with a color associated from blue to red for how much time has passed from one controll in a cell.
+         */
+        void drawGrid();
         /**
          * @brief Retrieve drone from db with id.
          * @param id The id to find.

@@ -20,8 +20,8 @@
 DroneInfoMessage* generateDroneInfoMessage(Drone *drone, long long id) {
     DroneInfoMessage *info = new DroneInfoMessage(id);
     info->setDroneId(drone->getId());
-    info->setPosX(drone->getPosX() / 20);
-    info->setPosY(drone->getPosY() / 20);
+    info->setPosX(drone->getPosX() / GRID_FACTOR);
+    info->setPosY(drone->getPosY() / GRID_FACTOR);
     info->setBatteryAutonomy(drone->getBatteryAutonomy());
     info->setChargeTime(drone->getRechargeTime());
     info->setState(drone->getState());
@@ -132,8 +132,8 @@ bool Drone::connectToTower() {
             this->id = associateId;
             this->channel->setId(this->id);
         }
-        this->towerX = association->getTowerX() * 20;
-        this->towerY = association->getTowerY() * 20;
+        this->towerX = association->getTowerX() * GRID_FACTOR;
+        this->towerY = association->getTowerY() * GRID_FACTOR;
         this->positionLock.lock();
         this->posX = this->towerX;
         this->posY = this->towerY;
@@ -261,7 +261,7 @@ void Drone::move(double delta) {
         // Arrived at destination.
         LocationMessage *location = new LocationMessage(this->generateMessageId());
         // Normalize Positon
-        location->setLocation(posX / 20, posY / 20);
+        location->setLocation(posX / GRID_FACTOR, posY / GRID_FACTOR);
         this->channel->sendMessageTo(0, location);
         delete location;
         if (posX == this->towerX && posY == this->towerY && this->getState() == RETURNING) {
@@ -354,8 +354,8 @@ void Drone::moveTo(int x, int y) {
     DroneState state = this->getState();
     if (state == READY || state == MONITORING || state == WAITING) {
         this->destinationLock.lock();
-        this->destX = x * 20;
-        this->destY = y * 20;
+        this->destX = x * GRID_FACTOR;
+        this->destY = y * GRID_FACTOR;
         this->destinationLock.unlock();
         this->setState(MONITORING);
         logi("Setting destination to (" + std::to_string(this->destX) + "," + std::to_string(this->destY) + ")");

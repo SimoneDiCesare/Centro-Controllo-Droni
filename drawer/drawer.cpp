@@ -30,6 +30,10 @@ void Drawer::drawGrid(int** grid, int width, int height) {
     EndDrawing();
 }
 
+bool Drawer::shouldClose() {
+    return WindowShouldClose();
+}
+
 void Drawer::close() {
     CloseWindow();
 }
@@ -44,6 +48,9 @@ void Drawer::drawGrid(int** grid, int width, int height) {
     // Do nothing
 }
 
+bool Drawer::shouldClose() {
+    return true; // Close instanlty the loop -> no display
+}
 
 void Drawer::close() {
     // Do nothing
