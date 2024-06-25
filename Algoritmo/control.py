@@ -4,8 +4,9 @@ import singleDrone as sd
 import drone as dr
 import block as blk
 import matTools as mt
+from tqdm import tqdm
 
-#funzioni NECESSARIE per solo per la fuzione della torre di controllo
+#funzioni NECESSARIE per solo per la funzione della torre di controllo
 def updateTime(matrice):
     h = len(matrice)
     w = len(matrice[0])
@@ -31,7 +32,7 @@ def max_block(blocks):
             g = i
     return g
 
-def create_bloks(start_dim, nblocks):
+def create_blocks(start_dim, nblocks):
     #list of blocks:
     #[...
     # i-esimo blocco: [inizio_x, inizio_y, fine_i, fine_y],
@@ -60,8 +61,8 @@ def biBlock(start_dim, nblock):
     while pow_of_two < nblock:
        pow_of_two *= 2
        if pow_of_two >= start_dim*start_dim:
-           return create_bloks(start_dim, start_dim**2)
-    return create_bloks(start_dim, pow_of_two)
+           return create_blocks(start_dim, start_dim**2)
+    return create_blocks(start_dim, pow_of_two)
     
 
 def assegna(block, assignment, mtx):
@@ -93,16 +94,19 @@ def calculate_time_diag(a,b):
 
 #-----------
 #DATI DI PARTENZA
-#ogni casella indica un'area quadrata di 20m x 20m 
-#per passare da una casella all'altra un drone impiega 2.4 secondi. 
-#ogni STEO indica un'iterazione del codice
+#ogni casella indica un'area quadrata di 14,142135624 m x 14,142135624 m 
+#velocita' del drone = 15 km/h
+#per passare da una casella all'altra un drone impiega 3.4 secondi. 
+#ogni STEP indica un'iterazione del codice
 #in questa iterazione il drone si muove di STEP
-#ogni STEP indica 2.4 secondi. 
-dim = 300 #per problema originale dim = 300
-common_time = 80 #per problema originale dim = 750
-Ndrones = 120
+#ogni STEP indica 3.4 secondi. 
+DIM_CASELLA = 14.142135624 
+LATO = 600
+dim = int((LATO+DIM_CASELLA-0.000000001)/DIM_CASELLA) #per problema originale dim = 300
+common_time = 1061 #per problema originale dim = 1061
+Ndrones = 256
 origin = (int((dim-1)/2),int((dim-1)/2)) #presumendo che l'area sia QUADRATA
-t_iter = 5000
+t_iter = 20000
 #-----------
 #versione SENZA movimenti in diagonale: ogni spostamento è marcato sulla mappa
 def control(mat):
@@ -195,8 +199,8 @@ def controlD(mat):
     for b in block:
         print(b)
     print(len(block))
-    iteration = 0 
-    while iteration < t_iter:
+    
+    for iteration in tqdm(range(t_iter),desc = "peni"):
         
         for r in [dro for dro in drones if dro.state == "Ready"]:
             assignment[r] = assegnaMax( block, assignment,mat)
@@ -263,7 +267,7 @@ def controlD(mat):
             #print(d, f"blocco: {assignment[d]}, diag: {diagonal[d.id]}" )
         #print(recharge)
         #vis.visualizza(mat)
-        mat = updateTime(mat)
+        mat = mat + 1
         avg,maxx = mt.info(mat)
         in_volo = 0
         for d in drones:
@@ -273,7 +277,7 @@ def controlD(mat):
         dati[1,iteration] = maxx
         dati[2,iteration] = in_volo
         #print(f"it: {iteration}, avg: {avg}, max: {maxx}, in volo: {in_volo}")
-        iteration+= 1
+        
     print(f"avg: {sum(dati[0])/t_iter}, max:{max(dati[1])}, in volo:{sum(dati[2])/t_iter}")
     vis.salva(mat)
 

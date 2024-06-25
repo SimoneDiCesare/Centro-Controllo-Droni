@@ -1,0 +1,111 @@
+{
+	"_type": "UMLClass",
+	"_id": "AAAAAAGPtX1M7dlEOO8=",
+	"_parent": {
+		"$ref": "AAAAAAFF+qBWK6M3Z8Y="
+	},
+	"name": "Drone",
+	"ownedElements": [
+		{
+			"_type": "UMLAssociation",
+			"_id": "AAAAAAGPtaZcmeXynxU=",
+			"_parent": {
+				"$ref": "AAAAAAGPtX1M7dlEOO8="
+			},
+			"end1": {
+				"_type": "UMLAssociationEnd",
+				"_id": "AAAAAAGPtaZcmeXztI8=",
+				"_parent": {
+					"$ref": "AAAAAAGPtaZcmeXynxU="
+				},
+				"reference": {
+					"$ref": "AAAAAAGPtX1M7dlEOO8="
+				}
+			},
+			"end2": {
+				"_type": "UMLAssociationEnd",
+				"_id": "AAAAAAGPtaZcmeX0Sb0=",
+				"_parent": {
+					"$ref": "AAAAAAGPtaZcmeXynxU="
+				},
+				"reference": {
+					"$ref": "AAAAAAGPtaVtVOXg9xI="
+				}
+			}
+		}
+	],
+	"attributes": [
+		{
+			"_type": "UMLAttribute",
+			"_id": "AAAAAAGPtY3HSdmikRw=",
+			"_parent": {
+				"$ref": "AAAAAAGPtX1M7dlEOO8="
+			},
+			"name": "id",
+			"type": ""
+		},
+		{
+			"_type": "UMLAttribute",
+			"_id": "AAAAAAGPtX16XdlusYE=",
+			"_parent": {
+				"$ref": "AAAAAAGPtX1M7dlEOO8="
+			},
+			"name": "x_position",
+			"type": ""
+		},
+		{
+			"_type": "UMLAttribute",
+			"_id": "AAAAAAGPtX6g79l1w50=",
+			"_parent": {
+				"$ref": "AAAAAAGPtX1M7dlEOO8="
+			},
+			"name": "y_position",
+			"type": ""
+		},
+		{
+			"_type": "UMLAttribute",
+			"_id": "AAAAAAGPtYl/Itl76r4=",
+			"_parent": {
+				"$ref": "AAAAAAGPtX1M7dlEOO8="
+			},
+			"name": "residue_autonomy",
+			"type": ""
+		},
+		{
+			"_type": "UMLAttribute",
+			"_id": "AAAAAAGPtYnGx9mBsec=",
+			"_parent": {
+				"$ref": "AAAAAAGPtX1M7dlEOO8="
+			},
+			"name": "max_autonomy",
+			"type": ""
+		},
+		{
+			"_type": "UMLAttribute",
+			"_id": "AAAAAAGPtYnQ0tmHz1Y=",
+			"_parent": {
+				"$ref": "AAAAAAGPtX1M7dlEOO8="
+			},
+			"name": "charging_time",
+			"type": ""
+		},
+		{
+			"_type": "UMLAttribute",
+			"_id": "AAAAAAGPtYnsBtmN1uc=",
+			"_parent": {
+				"$ref": "AAAAAAGPtX1M7dlEOO8="
+			},
+			"name": "state",
+			"type": ""
+		},
+		{
+			"_type": "UMLAttribute",
+			"_id": "AAAAAAGPtYn4h9mTyU0=",
+			"_parent": {
+				"$ref": "AAAAAAGPtX1M7dlEOO8="
+			},
+			"name": "last_update",
+			"type": ""
+		}
+	]
+}
