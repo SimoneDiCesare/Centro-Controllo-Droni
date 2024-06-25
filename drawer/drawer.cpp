@@ -8,7 +8,8 @@ void Drawer::init() {
     InitWindow(1080, 720, "Grid");
 }
 
-void Drawer::drawGrid(int** grid, int width, int height) {
+// TODO: Check color correctness with timestamp
+void Drawer::drawGrid(long long** grid, int width, int height) {
     BeginDrawing();
     ClearBackground(RAYWHITE);
     float cellWidth = 1080.f / width;
@@ -16,7 +17,7 @@ void Drawer::drawGrid(int** grid, int width, int height) {
     for (int x = 0; x < width; x++) {
         for (int y = 0; y < height; y++) {
             // std::cout << grid[x][y] << "\n";
-            int redValue = grid[x][y];
+            int redValue = (int) grid[x][y];
             // Map red value
             redValue *= (int)((redValue / 64.f) * 255);
             if (redValue > 255) {
@@ -46,7 +47,7 @@ void Drawer::init() {
     std::cout << "Can't display GUI in a non gui environment\n";
 }
 
-void Drawer::drawGrid(int** grid, int width, int height) {
+void Drawer::drawGrid(long long** grid, int width, int height) {
     // Do nothing
 }
 

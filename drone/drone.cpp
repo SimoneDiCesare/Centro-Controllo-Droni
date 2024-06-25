@@ -119,7 +119,7 @@ bool Drone::connectToTower() {
     // Setting timeout for redis responses
     AssociateMessage message(this->generateMessageId(), this->id);
     this->channel->sendMessageTo(0, &message);
-    Message *response = this->channel->awaitMessage(10);
+    Message *response = this->channel->awaitMessage(5 * 60);
     if (response == nullptr) {
         loge("Can't enstablish connection to tower!");
         delete response;
@@ -402,12 +402,12 @@ void Drone::handleMessage(Message *message) {
             DisconnectMessage *disconnect = new DisconnectMessage(this->generateMessageId());
             this->channel->sendMessageTo(0, disconnect);
             delete disconnect;
-            bool channelFlushed = this->channel->flush();
+            /*bool channelFlushed = this->channel->flush();
             if (channelFlushed) {
                 logi("Channel Flushed!");
             } else {
                 logw("Can't flush redis channel");
-            }
+            }*/
             std::exit(0);
             break;
         }

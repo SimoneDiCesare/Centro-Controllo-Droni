@@ -4,6 +4,7 @@
 #include <string>
 #include <cmath>
 #include <iostream>
+#include <climits>
 
 Block::Block(int x, int y, int width, int height) {
     this->x = x;
@@ -131,9 +132,9 @@ std::string Block::toString() {
 Area::Area(int width, int height) {
     this->width = width;
     this->height = height;
-    this->matrix = new int*[this->width];
+    this->matrix = new long long*[this->width];
     for (int i = 0; i < this->width; i++) {
-        this->matrix[i] = new int[this->height];
+        this->matrix[i] = new long long[this->height];
         for (int j = 0; j < this->height; j++) {
             this->matrix[i][j] = 0;
         }
@@ -196,6 +197,18 @@ Area::~Area() {
     delete this->blocks;
 }
 
+int Area::getMinIn(Block block) {
+    long long min = LLONG_MAX;
+    for (int i = block.getX(); i < block.getX() + block.getWidth(); i++) {
+        for (int j = block.getY(); j < block.getY() + block.getHeight(); j++) {
+            if (min > this->matrix[i][j]) {
+                min = this->matrix[i][j];
+            }
+        }
+    }
+    return min;
+}
+
 int Area::getMaxIn(Block block) {
     int max = 0;
     for (int i = block.getX(); i < block.getX() + block.getWidth(); i++) {
@@ -220,6 +233,6 @@ std::vector<Block>* Area::getBlocks() {
     return this->blocks;
 }
 
-int** Area::getMatrix() {
+long long** Area::getMatrix() {
     return this->matrix;
 }

@@ -12,6 +12,7 @@
 #include <vector>
 #include <mutex>
 #include <tuple>
+#include <climits>
 
 long long Tower::generateMessageId() {
     this->messageCounterLock.lock();
@@ -302,7 +303,7 @@ void Tower::start() {
     this->running = true;
     std::vector<std::thread> threads;
     threads.emplace_back(&Tower::droneCheckLoop, this);
-    threads.emplace_back(&Tower::areaUpdateLoop, this);
+    // threads.emplace_back(&Tower::areaUpdateLoop, this);
     threads.emplace_back(&Tower::drawGrid, this);
     logi("Tower online");
     while (this->running) {
@@ -338,17 +339,30 @@ void Tower::start() {
         this->channel->sendMessageTo(drone.id, message);
         delete message;
     }
+    logi("Waiting threads to finish");
     // Await Spawned Threads
     for (auto& thread : threads) {
         thread.join();
     }
     // Flush Channel
+    logi("Flushing Channel");
     bool channelFlushed = this->channel->flush();
     if (channelFlushed) {
         logi("Channel Flushed!");
     } else {
         logw("Can't flush redis channel");
     }
+    logi("Printing Area");
+    std::ofstream areaFile;
+    areaFile.open("area.csv", std::ios_base::app);
+    for(int i = 0; i < this->areaWidth; i++) {
+        for(int j = 0; j < this->areaHeight; j++) {
+            areaFile << this->area->operator[](i)[j] << ",";
+        }
+        areaFile << "\n";
+    }
+    areaFile.close();
+    logi("Area Saved on area.scv");
 }
 
 long long checkDroneId(Postgre* db, long long id) {
@@ -358,7 +372,7 @@ long long checkDroneId(Postgre* db, long long id) {
     }
     if (id <= 0) {
         loge("Can't obtain a valid id!");
-        return id;
+        return 1;
     }
     PostgreResult result = db->execute("SELECT id FROM drone WHERE id = " + std::to_string(id));
     if (result.error) {
@@ -400,16 +414,16 @@ void Tower::handleAssociation(AssociateMessage *message) {
 
 void Tower::associateBlock(Drone drone) {
     std::vector<Block> *blocks = this->area->getBlocks();
-    int maxValue = -1;
+    long long minValue = LLONG_MAX;
     int value = -1;
     Block *blockChosen = nullptr;
     for (Block& block : *blocks) {
         if (block.isAssigned()) {
             continue;
         }
-        value = this->area->getMaxIn(block);
-        if (maxValue < value) {
-            maxValue = value;
+        value = this->area->getMinIn(block);
+        if (minValue > value) {
+            minValue = value;
             blockChosen = &block;
         }
     }
@@ -524,7 +538,7 @@ void Tower::handleLocationMessage(LocationMessage *message) {
     if (drone.posX < 0 || drone.posX > this->areaWidth || drone.posY < 0 || drone.posY > this->areaHeight) {
         loge("Drone " + std::to_string(droneId) + " out of bounds! (" + std::to_string(drone.posX) + "," + std::to_string(drone.posY) + ")");
     } else {
-        this->area->operator[](drone.posX)[drone.posY] = 0;
+        this->area->operator[](drone.posX)[drone.posY] = Time::nanos();
     }
     logi("Drone " + std::to_string(droneId) + " arrived at: " + std::to_string(drone.posX) + "," + std::to_string(drone.posY));
     PostgreResult result = this->db->execute("UPDATE drone SET x = " + std::to_string(drone.posX) + ", y = " + std::to_string(drone.posY) + ", last_update = " + CURRENT_TIMESTAMP + " WHERE id = " + std::to_string(droneId));
@@ -538,7 +552,7 @@ void Tower::handleLocationMessage(LocationMessage *message) {
 void Tower::handleRetireMessage(RetireMessage* message) {
     long long droneId = message->getChannelId();
     Drone drone = this->getDrone(droneId);
-    this->area->operator[](drone.posX)[drone.posY] = 0;
+    this->area->operator[](drone.posX)[drone.posY] = Time::nanos();
     logi("Drone " + std::to_string(droneId) + " retiring");
     // TODO: Update to real drone position
     PostgreResult result = this->db->execute("UPDATE drone SET last_update = " + CURRENT_TIMESTAMP + " WHERE id = " + std::to_string(droneId));

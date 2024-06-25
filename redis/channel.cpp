@@ -502,63 +502,17 @@ bool Channel::flush() {
     if (!this->isUp()) {
         return false;
     }
-    RedisResponse *response = this->sendReadCommand("LLEN c:" + std::to_string(this->id));
+    RedisResponse *response = this->sendReadCommand("FLUSH ALL");
     if (response->hasError()) {
         if (response->getType() == NONE) {
-            logChannelWarning("Timeout on retrieving queue length");
+            logChannelWarning("Timeout on flushing");
         } else {
             logChannelError(response->getError());
         }
         delete response;
         return false;
     }
-    if (response->getType() != INTEGER) {
-        logChannelError("Unexpected behaviour from LLEN");
-        return false;
-    }
-    int count = std::stoi(response->getContent());
-    delete response;
-    response = this->sendReadCommand("LRANGE c:" + std::to_string(this->id) + " 0 " + std::to_string(count));
-    if (response->hasError()) {
-        if (response->getType() == NONE) {
-            logChannelWarning("Timeout on retrieving pending queue");
-        } else {
-            logChannelError(response->getError());
-        }
-        delete response;
-        return false;
-    }
-    if (response->getType() != VECTOR) {
-        logChannelError("unexpected behaviour from LRANGE");
-        return false;
-    }
-    std::vector<std::string> pendingMessages = response->getVectorContent();
-    delete response;
-    bool allDeleted = true;
-    for (std::string& messageId : pendingMessages) {
-        response = this->sendWriteCommand("DEL " + messageId);
-        if (response->hasError()) {
-            if (response->getType() == NONE) {
-                logChannelWarning("Timeout on deleting message " + messageId);
-            } else {
-                logChannelError(response->getError());
-            }
-            allDeleted = false;
-        }
-        delete response;
-    }
-    response = this->sendWriteCommand("DEL c:" + std::to_string(this->id));
-    if (response->hasError()) {
-        if (response->getType() == NONE) {
-            logChannelWarning("Timeout on deleting channel");
-        } else {
-            logChannelError(response->getError());
-        }
-        delete response;
-        return false;
-    }
-    delete response;
-    return allDeleted;
+    return true;
 }
 
 // Reading Operations

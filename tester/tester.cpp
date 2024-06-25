@@ -8,7 +8,7 @@
 #include "log.hpp"
 namespace fs = std::filesystem;
 
-#define MAX_DRONES 10
+#define MAX_DRONES 1000
 
 
 int NUMS_DRONES = MAX_DRONES;
@@ -82,10 +82,12 @@ void checkLogs() {
 
 // ./bin/tester_exe EXECUTION_SPEED EXECUTION_TIME RANDOM_DRONES
 int main(int argc, char* argv[]) {
+    logVerbose(true);
+    logOpen("tester.log");
     if (argc >= 2) {
         eS = std::stof(argv[1]);
     }
-    int executionTime = 2 * 60;
+    int executionTime = 5 * 60;
     if (argc >= 3) {
         executionTime = std::stoi(argv[2]);
     }
@@ -103,7 +105,7 @@ int main(int argc, char* argv[]) {
         return -1;
     } else if (tpid == 0) {
         // Child -> run tower
-        const char *argv[] = {"./bin/tower_gui",  std::to_string(NUMS_DRONES).c_str()};
+        const char *argv[] = {"./bin/tower_exe",  std::to_string(NUMS_DRONES).c_str()};
         // Sostituisce il processo figlio con tower_exe
         if (execvp(argv[0], (char *const *)argv) == -1) {
             logError("Tester", "Errore nell'esecuzione di execvp");
@@ -124,6 +126,7 @@ int main(int argc, char* argv[]) {
         } else { // Father
             logInfo("Tester", "DRONI on " + std::to_string(dpid));
             sleep(executionTime);
+            logInfo("Tester", "Fine Esecuzione");
             kill(tpid, SIGINT);
             // Wait all process to finish
             while (true) {

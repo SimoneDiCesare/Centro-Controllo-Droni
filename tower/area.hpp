@@ -175,7 +175,7 @@ class Area {
          * @return A rapresentation of this area as text.
          */
         std::string toString();
-        int* operator[](int index) {
+        long long* operator[](int index) {
             return this->matrix[index];
         }
         /**
@@ -183,17 +183,21 @@ class Area {
          */
         std::vector<Block>* getBlocks();
         /**
+         * @return The min value inside a block.
+         */
+        int getMinIn(Block block);
+        /**
          * @return The max value inside a block.
          */
         int getMaxIn(Block block);
         /**
          * @return The matrix pf this area.
         */
-        int** getMatrix();
+        long long** getMatrix();
     private:
         int width;                  ///< The width of the area.
         int height;                 ///< The height of the area.
-        int** matrix;               ///< The matrix in which the area is stored.
+        long long** matrix;               ///< The matrix in which the area is stored.
         std::vector<Block> *blocks; ///< The blocks in which the area is divided.
 };
 

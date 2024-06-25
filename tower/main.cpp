@@ -20,8 +20,8 @@ int main(int argc, char* argv[]) {
     logOpen(logFile);
     int droneCount = (argc >= 2)? std::stoi(argv[1]) : 100;
     // 6km -> 6000m -> 6000/GRID_FACTOR = Cell_Count
-    int areaWidth = 500 / GRID_FACTOR;
-    int areaHeight = 500 / GRID_FACTOR;
+    int areaWidth = 6000 / GRID_FACTOR;
+    int areaHeight = 6000 / GRID_FACTOR;
     logInfo("Init", "Running tower with: " + std::to_string(droneCount) + " " + std::to_string(areaWidth) + " " + std::to_string(areaHeight));
     PostgreArgs args;
     args.dbname = "towerdb";
