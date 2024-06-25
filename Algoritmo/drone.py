@@ -8,7 +8,7 @@ class Drone:
         self.time_of_fly = max_time_of_fly
         self.position = position
         self.chargetime = 1061*4 + (id**7)%1061 #"dalle due alle 3 ore" nel problema originale corrisponde alla seguente:300 + (id**7)%150 il modulo serve a variare
-        self.state = "Ready" #STATI: Ready: il drone è carico e fermo alla base, pronto per partire
+        self.state = "Charging" #STATI: Ready: il drone è carico e fermo alla base, pronto per partire
                              #       Flyng: il drone è in volo, time_of_fly > 0
                              #       Charging: il drone si sta ricaricando,  time_of_fly == 0, position == origin
                              #       Death: il drone si è scaricato in un punto diverso dall'origine. time_of_fly == 0, position != origin

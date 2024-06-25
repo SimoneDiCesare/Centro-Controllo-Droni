@@ -61,7 +61,7 @@ Tower::~Tower() {
     if (this->channel != nullptr) {
         delete this->channel;
     }
-    // TODO: Dealloc Area
+    delete this->area;
 }
 
 bool Tower::connectChannel(std::string ip, int port) {
@@ -296,7 +296,7 @@ void Tower::start() {
         loge("Can't start tower without a connected channel!");
         return;
     }
-    // TODO: Create Thread for updating are values
+
     // Register signals
     signal(SIGINT, Tower::handleSignal);
     signal(SIGTERM, Tower::handleSignal);
@@ -554,7 +554,7 @@ void Tower::handleRetireMessage(RetireMessage* message) {
     Drone drone = this->getDrone(droneId);
     this->area->operator[](drone.posX)[drone.posY] = Time::nanos();
     logi("Drone " + std::to_string(droneId) + " retiring");
-    // TODO: Update to real drone position
+
     PostgreResult result = this->db->execute("UPDATE drone SET last_update = " + CURRENT_TIMESTAMP + " WHERE id = " + std::to_string(droneId));
     if (result.error) {
         logError("DB", result.errorMessage);

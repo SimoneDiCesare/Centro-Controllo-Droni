@@ -151,7 +151,7 @@ bool Drone::connectToTower() {
         }
     }
     delete response;
-    // TODO: Send infos to tower
+
     
     return true;
 }
@@ -167,10 +167,10 @@ void Drone::start(float executionSpeed) {
         return;
     }
     logi("Connected to tower");
-    
-    std::thread moveThread(&Drone::behaviourLoop, this);
 
     // Start loop
+    std::thread moveThread(&Drone::behaviourLoop, this);
+
     std::vector<std::thread> threads;
     this->running = true;
     this->setState(READY);
@@ -196,7 +196,7 @@ void Drone::start(float executionSpeed) {
     for (auto &thread : threads) {
         thread.join();
     }
-    // TODO: Implement disconnect logic
+
 }
 
 void Drone::checkBattery() {

@@ -9,7 +9,7 @@
 #include <cmath>
 #include <chrono>
 
-// TODO: - Argument parsing
+
 // ./bin/tower_exe DRONE_NUMBER
 int main(int argc, char* argv[]) {
     std::string logFile = "tower - " + std::to_string(Time::nanos()) + ".log";

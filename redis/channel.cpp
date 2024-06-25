@@ -166,7 +166,7 @@ void AssociateMessage::setTowerY(int towerY) {
     this->towerY = towerY;
 }
 // Drone Info Message Class
-// TODO: Add all drone infos
+
 
 DroneInfoMessage::DroneInfoMessage(std::string id) : Message(id) {
     this->droneId = -1;
@@ -434,8 +434,13 @@ bool Channel::connect(std::string ip /*= "127.0.0.1"*/, int port /*= 6379*/) {
     return this->isUp();
 }
 
-bool Channel::disconnect() {
-    // TODO: Implement safe disconnection
+bool Channel::disconnect(){
+    this->readingLock.lock();
+    this->readingClient->disconnect();
+    this->readingLock.unlock();
+    this->writingLock.lock();
+    this->writingClient->disconnect();
+    this->writingLock.unlock();
     return true;
 }
 

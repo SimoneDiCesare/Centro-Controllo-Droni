@@ -161,6 +161,13 @@ bool Redis::connect(std::string host, int port) {
     return true;
 }
 
+void Redis::disconnect(){
+    if (this->connected){
+        close(this->sockFd);
+        this->connected = false;
+    }
+}
+
 RedisResponse* Redis::sendCommand(std::string command) {
     if (command.at(command.length() - 1) != '\n') {
         command += "\n";

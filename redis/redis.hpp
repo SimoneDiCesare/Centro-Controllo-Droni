@@ -107,6 +107,7 @@ class Redis {
          * @param port The server port 
          */
         bool connect(std::string host, int port);
+        void disconnect();
         /**
          * @brief Send a Redis command to server.
          * @param command The redis command.

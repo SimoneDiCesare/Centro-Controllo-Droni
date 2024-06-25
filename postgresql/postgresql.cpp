@@ -25,7 +25,7 @@ std::string buildArgs(const PostgreArgs args) {
     return formattedArgs;
 }
 
-// TODO: - Add try catch to connection
+
 
 Postgre::Postgre(const PostgreArgs args) : transactionMutex() {
     std::string formattedArgs = buildArgs(args);

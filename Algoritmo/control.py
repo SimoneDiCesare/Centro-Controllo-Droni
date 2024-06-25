@@ -101,10 +101,10 @@ def calculate_time_diag(a,b):
 #in questa iterazione il drone si muove di STEP
 #ogni STEP indica 3.4 secondi. 
 DIM_CASELLA = 14.142135624 
-LATO = 600
+LATO = 2000
 dim = int((LATO+DIM_CASELLA-0.000000001)/DIM_CASELLA) #per problema originale dim = 300
 common_time = 1061 #per problema originale dim = 1061
-Ndrones = 256
+Ndrones = 128
 origin = (int((dim-1)/2),int((dim-1)/2)) #presumendo che l'area sia QUADRATA
 t_iter = 20000
 #-----------
@@ -187,7 +187,7 @@ def controlD(mat):
     drones = [dr.Drone(common_time, origin, d) for d in range(Ndrones)]
     blocksIndex = biBlock(dim, Ndrones)
     block = [blk.Block((b[0],b[1]),(b[2], b[3]),origin) for b in blocksIndex]
-    recharge = [0 for d in drones]
+    recharge = [1061*4 for d in drones]
     dati = np.zeros((3,t_iter+1), dtype= float)
     assignment = dict()
     diagonal = [0 for d in drones]
@@ -200,7 +200,7 @@ def controlD(mat):
         print(b)
     print(len(block))
     
-    for iteration in tqdm(range(t_iter),desc = "peni"):
+    for iteration in tqdm(range(t_iter), desc="peni"):
         
         for r in [dro for dro in drones if dro.state == "Ready"]:
             assignment[r] = assegnaMax( block, assignment,mat)
@@ -212,11 +212,12 @@ def controlD(mat):
         for d in drones:
             if d.state == "Dead": continue
             if d.state == "Charging": 
-                recharge[d.id] += 1
                 if recharge[d.id] == d.chargetime:
                     recharge[d.id] = 0
                     d.state = "Ready"
                     d.time_of_fly = common_time
+                recharge[d.id] += 1
+                
                 
             else:
                 
@@ -278,7 +279,7 @@ def controlD(mat):
         dati[2,iteration] = in_volo
         #print(f"it: {iteration}, avg: {avg}, max: {maxx}, in volo: {in_volo}")
         
-    print(f"avg: {sum(dati[0])/t_iter}, max:{max(dati[1])}, in volo:{sum(dati[2])/t_iter}")
+    print(f"avg: {(sum(dati[0])/t_iter)*1.7}, max:{(max(dati[1]))*1.7/3600}, in volo:{sum(dati[2])/t_iter}")
     vis.salva(mat)
 
 
