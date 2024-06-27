@@ -9,16 +9,19 @@
 - [ ] simulazioni test 
 
 ## Nel resto del progetto
-- [ ] capire se i monitor sono giusti
+- [ ] capire se i monitor sono giusti -> Non credo sia na cosa fattibile
 - [ ] capire come ottenere a run time informazioni dall'area monitorata
-    - [ ] e ottenerle
+    - [ ] e ottenerle\
+           A runtime si ottengono pure, però ne va di efficienza. Se devo stampare ogni tot l'area, il sistema si rallenta si.
+          La cosa più leggera che si può fare di sicuro è ottenere il tempo minimo nell'area, il massimo ed una media (anche se non so a cosa e se ci possa essere utile).
 - [ ] pulire la repository da file vecchi
 - [ ] Scrivere un bel [README](README.md)
 
 ## domande di Armando 
-- [ ] perché ci sono due makefile? uno in [makefile1](libpqxx-7.7.5/build/include/Makefile) e [makefile2](makefile)
-
-- [ ] [Database.md](Database.md) è aggiornato? Se è aggiornato lo aggiungo alla relazione
+- [ ] perché ci sono due makefile? uno in [makefile1](libpqxx-7.7.5/build/include/Makefile) e [makefile2](makefile)\
+    Il makefile1 credo sia robaccia che si è portato dietro Pandro dal suo progetto, ma non serve. Il vero make è il secondo che hai detto
+- [ ] [Database.md](Database.md) è aggiornato? Se è aggiornato lo aggiungo alla relazione.\
+      Il file è aggiornato si, può essere implementato.
 
 
 # Appunti Simone
