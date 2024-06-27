@@ -1,4 +1,5 @@
 \documentclass[a4paper, 11pt]{article}
+\usepackage[a4paper, left=1in, right=1in, top=1in, bottom=1in]{geometry}
 \usepackage[dvipsnames]{xcolor}
 \usepackage{graphicx} % Required for inserting images
 \usepackage{amsfonts}
@@ -19,14 +20,53 @@
 \usepackage{titlesec}
 \usepackage{enumitem}
 \usepackage{float}
+\usepackage{tabularx}
+\usepackage{adjustbox}
+\usepackage{multicol}
+\usepackage{listings}
+\setlist{nolistsep} % Rimuove lo spazio extra tra gli elementi della lista
 
+\definecolor{comment}{rgb}{0.5, 0.5, 0.5}
+\definecolor{string}{rgb}{0.3, 0.6, 0.3}
+\definecolor{keyword}{rgb}{0.7, 0, 0.4}
+\definecolor{identifier}{rgb}{0.2, 0.2, 1}
+\definecolor{background}{rgb}{0.99, 0.99, 0.99}
 
+\lstdefinestyle{customcpp}{
+    language=C++,
+    basicstyle=\ttfamily\footnotesize,
+    backgroundcolor=\color{background},
+    keywordstyle=\color{keyword},
+    identifierstyle=\color{identifier},
+    commentstyle=\color{comment}\itshape,
+    stringstyle=\color{string},
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    stepnumber=1,
+    numbersep=10pt,
+    tabsize=4,
+    showspaces=false,
+    showstringspaces=false,
+    breaklines=true,
+    breakatwhitespace=true,
+    escapeinside={\%*}{*)},
+    frame=single,
+    rulecolor=\color{black},
+    captionpos=b,
+    morekeywords={override, nullptr},
+}
 \titleformat{\chapter}[display]
   {\normalfont\Large\bfseries} % Stile del titolo
   {\chaptername\ \thechapter}{10pt}{\Large}
 
 \titlespacing*{\chapter}{0pt}{-20pt}{20pt}
 
+\newenvironment{myindentpar}[1]%
+  {\begin{list}{}%
+          {\setlength{\leftmargin}{#1}}%
+          \item[]%
+  }
+  {\end{list}}
 
 \hypersetup{
     colorlinks=true,
@@ -257,5 +297,425 @@ possiamo osservare che a parità di area e di droni il FirstAverageTime ottiene 
 Al contrario il FirstMaxTime al costo di aumentare leggermente il tempo medio di visita, riesce a diminuire sensibilmente il tempo di visita massimo dimostrandosi più equo.  
 
 
+\section{Protocollo di comunicazione}
+La Torre di Controllo ed i Droni comunicano in maniera asincrona. Le comunicazioni avvengono tramite Redis.
+\subsection{Scambio di messaggi}
+
+Ogni attore ha un suo identificativo univoco. La torre ha sempre ID = 0 mentre i droni hanno id casuali assegnati dalla torre. 
+Ogni attore ha riservato un canale rappresentato su redis da una \textbf{coda} con chiave = "c:\textbf{id}"
+
+Il proprietario usa il suo canale solo in lettura mentre gli altri attori lo utilizzano in scrittura.
+Dunque ogni elemento nella coda rappresenta l'id di un messaggio con il seguente formato $(m:ID:mID)$ dove
+\begin{itemize}
+    \item $ID$ rappresenta l'id del mittente
+    \item $mID$ rappresenta l'identificatore univoco dell'elemento nel canale.
+\end{itemize}
+
+Il contenuto del messaggio si ottiene inserendo in un apposito \textbf{HashMap} l'$mID$ del messaggio.
+\subsection{La classe Channel}
+Per gestire agevolmente la ricezione e l'invio dei messaggio è stata implementata la classe Channel, la quale gestisce un canale di un attore. Per inviare e ricevere messaggi, la classe channel presenta due metodi:
+I messaggi vengono letti e scritti dalla coda utilizzando \textbf{"LPUSH c:id message\_id"} per inserire un messaggio, ed \textbf{"RPOP c:id"} per estrarre il primo messaggio arrivato.
+
+\textbf{void sendMessageTo(int channelId, Message \&message)}\\
+Questo metodo permette di aggiungere alla lista di messaggi di channelId il messaggio message tramite i due comandi:
+
+\begin{lstlisting}[style=customcpp, caption={da tower.cpp}]
+    // Creazione del messaggio su redis
+    hset m:{this.id}:{message.id} {message.parseMessage()}
+    
+    // Aggiunta del messaggio al canale
+    lpush c:{channelId} m:{this.id}:{message.id} 
+\end{lstlisting}
+
+\textbf{Message* awaitMessage(long timeout = -1)}\\
+Questo metodo serve per aspettare l'arrivo di un messaggio all'interno di un canale, per poi leggerlo e ritornarlo.
+Il parametro \textbf{timeout}, se diverso da -1, imposta un tempo massimo per l'attesa di un messaggio.
+\subsubsection{Thread Safety}
+
+La Classe channel è thread safe, poiché gestisce le due funzioni \textbf{sendMessageTo} e \textbf{awaitMessage} tramite due mutex:
+\begin{itemize}
+    \item Un mutex in scrittura, che viene utilizzato per fare il lock durante la creazione e scrittura di un messaggio su un canale
+    \item Un mutex in lettura, che viene lockato in attesa di una risposta da redis quando si tenta di leggere un messaggio dal canale.
+\end{itemize}
+
+Si è deciso di dividere le operazioni tra due mutex per questione di efficienza, così che mentre un attore è in attesa di un messaggio,
+possa continuare a fare altre operazioni in scrittura per aggiornare il suo stato agli occhi degli altri attori (nel nostro caso, 
+torna utile per ridurre i tempi di attesa di risposta tra la torre ed i droni)
+\subsection{La classe Message}
+La classe Message è la classe che rappresenta un messaggio di un canale.
+\subsubsection{Costruttori}
+I costruttori della classe Message sono due:
+\begin{itemize}
+    
+    \item \textbf{Message(std::string id)}\\
+        Usato nella creazione di un messaggio già presente.
+        Prende come parametro una stringa del formato \textbf{id:mid}, nel quale \textbf{id} è l'id del canale che ha inviato il messaggio, e \textbf{mid} è l'id del messaggio.
+
+    \item \textbf{Message(int id)}\\
+        Usato nella creazione di un messaggio da creare ed inviare.
+        Prende come parametro un intero che rappresenta l'id del messaggio.
+
+\end{itemize}
+In aggiunta, questa classe presenta due metodi virtuali che deve implementare ogni tipo di messaggio:\\
+\begin{itemize}
+    \item \textbf{void parseResponse(RedisResponse* response)}\\
+        Questo metodo serve a ricevere una Risposta da un Comando Redis, e tramutarla in messaggio. Dietro le quinte, quello che viene fatto è:
+        \begin{enumerate}
+            \item Inviare un comando a redis del tipo \textit{hgetall n:id:mid}
+            \item Controllare la validità della risposta
+            \item Creare un messaggio tramite il costruttore:\\ \textit{Message(std::string id)}
+            \item Parsare la risposta ottenuta tramite: \\ \textit{message.parseResponse(response)}
+        \end{enumerate}
+    \item\textbf{std::string parseMessage()}\\
+        Questo metodo serve a trasformare i dati contenuti nel messaggio in una stringa della forma:
+        \begin{verbatim}
+            type type_value p1 v1 p2 v2 p3 v3
+        \end{verbatim}
+        Nella quale type\_value è un intero che rappresenta il tipo del messaggio, mentre pX kX sono le coppie (parametro, valore) contenute nel messaggio
+
+\end{itemize}
+
+
+
+\textbf{Esempio:} La classe PositionMessage, che serve per mandare la posizione di un drone alla torre, presenterà il corpo della funzione parseMessage() di questo tipo:
+\begin{lstlisting}[style=customcpp, caption={da tower.cpp}]
+    return "type 2 x " + std::to_string(this->x) + " y " + std::to_string(this->y);
+\end{lstlisting}
+\subsubsection{Lista Messaggi}
+
+% Definisce una nuova colonna di tipo "L" che è equivalente alla "l" ma più versatile per l'ambiente tabularx
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+
+% Ridurre la dimensione del carattere della tabella
+\small
+
+\begin{adjustbox}{max width=\textwidth}
+    \begin{tabularx}{\textwidth}{|L|c|L|L|}
+    \hline
+    \rule{0pt}{3ex} % Aggiungi spazio verticale
+    \textbf{Classe} & \textbf{Tipo} & \textbf{Parametri} & \textbf{Info} \\
+    \hline
+    \rule{0pt}{3ex} % Aggiungi spazio verticale
+    AssociateMessage & 0 & drone\_id: long long, x: int, y: int & Messaggio di associazione drone$\leftrightarrow$torre \\
+    \hline
+    \rule{0pt}{3ex} % Aggiungi spazio verticale
+    PingMessage & 1 & nessuno & Semplice messaggio di Ping \\
+    \hline
+    \rule{0pt}{3ex} % Aggiungi spazio verticale
+    DroneInfoMessage & 2 & {params} & Scambio parametri drone$\rightarrow$torre \\
+    \hline
+    \rule{0pt}{3ex} % Aggiungi spazio verticale
+    LocationMessage & 3 & x: int, y: int & Nuova posizione per drone dalla torre \\
+    \hline
+    \rule{0pt}{3ex} % Aggiungi spazio verticale
+    RetireMessage & 4 & nessuno & Drone con batteria scarica. Rientro necessario \\
+    \hline
+    \rule{0pt}{3ex} % Aggiungi spazio verticale
+    DisconnectMessage & 5 & nessuno & Disconnette l'associazione drone$\leftrightarrow$torre \\
+    \hline
+    \end{tabularx}
+\end{adjustbox}
+
+\textbf{AssociateMessage}
+
+\begin{myindentpar}{0.4cm}
+Messaggio inviato dal drone alla torre per richiedere l'associazione al pool di droni.
+La torre risponde ritornando l'id che associerà al drone per riconoscimento all'interno della formazione.
+Il messaggio presenta il campo \textbf{drone\_id}, che rappresenta l'id temporaneo de drone in richiesta, oppure l'id associato dalla torre in caso di associazione effettuata.
+Inoltre, il messaggio contiene la posizione della torre per gestire con precisione il punto di partenza dei droni.
+\end{myindentpar}
+
+\textbf{PingMessage}
+\begin{myindentpar}{0.4cm}
+Messaggio inviato dalla torre al drone per verificarne l'esistenza. Viene generalmente utilizzato quando la torre non riceve update dal drone per più di 2 minuti.
+Questo messaggio non presenta parametri.
+\end{myindentpar}
+
+\textbf{DroneInfoMessage}
+\begin{myindentpar}{0.4cm}
+Messaggio per aggiornare le info di un drone all'interno del db della torre. Viene generalmente mandato dalla torre al drone, per richiedere un update dello stato del drone e verificarne il funzionamento.
+I parametri del messaggio sono i campi del drone:
+\begin{itemize}
+    \item drone\_id
+    \item x
+    \item y
+    \item drone\_state
+    \item charge\_time
+    \item battery\_autonomy
+\end{itemize}
+\end{myindentpar}
+
+\textbf{LocationMessage}
+\begin{myindentpar}{0.4cm}
+Messaggio con duplice scopo:
+\begin{itemize}
+    \item Se inviato dalla torre al drone, significa che la torre sta impostando delle nuove coordinate da raggiungere al drone. Dunque, in lettura il drone aggiornerà le coordinate e deciderà cosa fare di conseguenza.
+    \item Se inviato dal drone alla torre, rappresenta un update della posizione del drone, il quale ha completato il movimento assegnatogli in precedenza.
+\end{itemize}
+Il messaggio presenta i seguenti parametri:
+\begin{itemize}
+    \item x: La posizione sull'asse x
+    \item y: La posizione sull'asse y
+\end{itemize}
+\end{myindentpar}
+
+\textbf{RetireMessage}
+\begin{myindentpar}{0.4cm}
+Messaggio inviato dal drone per notificare la necessità di rientro per low battery.
+In questo caso, la torre invia al drone un LocationMessage con le coordinate precise della torre, e lo mette in stato retiring per ottimizzare il percorso di rientro.
+\end{myindentpar}
+
+\textbf{DisconnectMessage}
+\begin{myindentpar}{0.4cm}
+Messaggio che rimuove l'associazione tra la torre ed il drone. Permette di liberare risorse su redis e sul database.
+\end{myindentpar}
+\newpage
+
+\subsection{Message Sequence Chart UML}
+Di seguito vengono mostrati alcuni \textbf{Message Sequence Chart UML} che mostrano i principali scenari di scambio di messaggi tra la torre e un drone qualsiasi.
+
+
+
+\begin{tabular}{m{0.5 \textwidth} p{0.5 \textwidth}}
+    \includegraphics[width=0.45\textwidth]{image/associatedUML_MSC.png}&\textbf{Associazione di un drone:}
+    \begin{enumerate}
+        \item Il drone richiede di essere associato 
+        \item La torre aderisce all'associazione
+        \item La torre richiede le informazioni del drone
+        \item Il drone risponde alla richiesta di informazioni 
+        \item La torre inizia a guidare il drone 
+    \end{enumerate}\\
+    \includegraphics[width=0.45\textwidth]{image/monitoringUML_MSC.png} &\textbf{Monitoraggio di un drone:}
+    \begin{enumerate}
+        \item La torre invia la posizione da raggiungere
+        \item Tramite il \textit{LocationMessage} il drone comunica di aver raggiunto il punto identificato
+        \item La torre prontamente risponde con il nuovo punto calcolato
+        \item Quando il drone non ha carica sufficiente invia un \textit{RetireMessage} e torna alla torre
+    \end{enumerate}\\
+    \includegraphics[width=0.45\textwidth]{image/rechargingUML_MSC.png}&\textbf{Ricarica di un drone:}
+    \begin{enumerate}
+        \item Il drone comunica che la sua batteria è scarica 
+        \item Tramite il \textit{LocationMessage} il drone comunica di essere tornato alla torre 
+        \item Il drone comunica di essersi ricaricato inviando un \textit{DroneInfoMessage}
+        \item La torre ricomincia a guidarlo per monitorare l'area
+    \end{enumerate}
+
+\end{tabular}
+\newpage
+\section{Implementazione}
+Di seguito vengono riportate parti del codice implementato 
+\begin{lstlisting}[style=customcpp, caption={da drone.cpp}]
+    void Drone::start(float executionSpeed) {
+
+        this->setExecutionSpeed(executionSpeed);
+
+        // Enstablish connection to tower
+        bool connectedToTower = this->connectToTower();
+        if (!connectedToTower) {
+            loge("Can't connect to tower!");
+            return;
+        }
+        logi("Connected to tower");
+
+        // Start loop
+        std::thread moveThread(&Drone::behaviourLoop, this);
+
+        std::vector<std::thread> threads;
+        this->running = true;
+        this->setState(READY);
+        while (this->running) {
+            Message *message = this->channel->awaitMessage();
+            if (message == nullptr) {
+                // No message received. Maybe ping tower?
+                continue;
+            }
+            logi("Received message m:" + message->getFormattedId());
+            threads.emplace_back(&Drone::handleMessage, this, message);
+            // Free up completed threads
+            for (auto it = threads.begin(); it != threads.end();) {
+                if (it->joinable()) {
+                    it ++;
+                } else {
+                    it = threads.erase(it);
+                }
+            }
+        }
+        // Disconnect drone
+        // Wait threads to finish
+        for (auto &thread : threads) {
+            thread.join();
+        }
+
+    }
+    \end{lstlisting}
+    Il drone dopo aver completato con successo la procedura di connessione, entra in un loop in cui gestisce parallelamente sia i suoi spostamenti [riga 14.  behaviourLoop è una funzione che simula lo spostamento del drone] sia i messaggi ricevuti e da inviare alla torre di controllo.
+    \newpage
+    Le funzioni utilizzate per suddividere l'area in blocchi
+    \begin{lstlisting}[style=customcpp, caption={da area.cpp}]
+
+    void calculateBlocksInArea(int width, int height, int &numBlocks, int &blockWidth, int &blockHeight) {
+        int w = std::sqrt(numBlocks);
+        int h = w;
+        while (h * w < numBlocks) {
+            if ((h + 1) * w <= numBlocks) {
+                h++;
+            } else {
+                w++;
+            }
+        }
+        numBlocks = w * h;
+        blockWidth = std::ceil(static_cast<double>(width) / w);
+        blockHeight = std::ceil(static_cast<double>(height) / h);
+    }
+
+    void Area::initArea(int blockCount, int centerX, int centerY) {
+        this->blocks = new std::vector<Block>();
+        int blockWidth = 0;
+        int blockHeight = 0;
+        calculateBlocksInArea(this->width, this->height, blockCount, blockWidth, blockHeight);
+        logDebug("Area", "Area Approximated to " + std::to_string(blockCount) + "(" + std::to_string(blockWidth) + "," + std::to_string(blockHeight) + ")");
+        int x = 0;
+        int y = 0;
+        for (int i = 0; i < blockCount; i++) {
+            Block b(x, y, blockWidth, blockHeight);
+            x += blockWidth;
+            if (b.getX() >= this->width) {
+                b.setX(0);
+                b.setY(b.getY() + blockHeight);
+                x = blockWidth;
+                y += blockHeight;
+            }
+            if (b.getY() >= this->height) {
+                // Extra blocks
+                break;
+            }
+            if (b.getX() + b.getWidth() >= this->width) {
+                b.setWidth(this->width - b.getX());
+            }
+            if (b.getY() + b.getHeight() >= this->height) {
+                b.setHeight(this->height - b.getY());
+            }
+            b.orientBlock(centerX, centerY);
+            this->blocks->push_back(b);
+        }
+        logDebug("Area", "Fitted " + std::to_string(this->blocks->size()) + " blocks");
+    }
+\end{lstlisting}
+\newpage
+La funzione che gestisce il principale comportamento della torre
+\begin{lstlisting}[style=customcpp, caption={da tower.cpp}]
+    void Tower::start() {
+        if (!this->channel->isUp()) {
+            loge("Can't start tower without a connected channel!");
+            return;
+        }
+        // Register signals
+        signal(SIGINT, Tower::handleSignal);
+        signal(SIGTERM, Tower::handleSignal);
+        this->running = true;
+        std::vector<std::thread> threads;
+        threads.emplace_back(&Tower::droneCheckLoop, this);
+        // threads.emplace_back(&Tower::areaUpdateLoop, this);
+        threads.emplace_back(&Tower::drawGrid, this);
+        logi("Tower online");
+        while (this->running) {
+            // 1' of waiting before restarting the cycle
+            Message *message = this->channel->awaitMessage(10);
+            if (message == nullptr) {
+                // If we have no message to handle, we check last updates from drones
+                // If a last update is > x second (to decide, maybe 1-5' => 60-300'') -> ping and wait a response
+                // If the drone is doing nothing, we commit it to monitor a zone
+            } else {
+                // Handle message received on another thread, and return to listen
+                logi("Received message from Drone " + std::to_string(message->getChannelId()) + ". Type: " + std::to_string(message->getType()));
+                threads.emplace_back(&Tower::handleMessage, this, message);
+            }
+            // Free finished threads
+            for (auto it = threads.begin(); it != threads.end(); ) {
+                if (it->joinable()) {
+                    it++;
+                } else {it = threads.erase(it);}
+            }
+        }
+        logi("Powering Off");
+        // Disconnect Drones
+        std::vector<Drone> drones = this->getDrones();
+        for (Drone& drone : drones) {
+            if (drone.droneState == DEAD) {
+                continue;
+            }
+            DisconnectMessage *message = new DisconnectMessage(this->generateMessageId());
+            this->channel->sendMessageTo(drone.id, message);
+            delete message;
+        }
+        logi("Waiting threads to finish");
+        // Await Spawned Threads
+        for (auto& thread : threads) {
+            thread.join();
+        }
+        // Flush Channel
+        logi("Flushing Channel");
+        bool channelFlushed = this->channel->flush();
+        if (channelFlushed) {
+            logi("Channel Flushed!");
+        } else {
+            logw("Can't flush redis channel");
+        }
+        logi("Printing Area");
+        std::ofstream areaFile;
+        areaFile.open("area.csv", std::ios_base::app);
+        for(int i = 0; i < this->areaWidth; i++) {
+            for(int j = 0; j < this->areaHeight; j++) {
+                areaFile << this->area->operator[](i)[j] << ",";
+            }
+            areaFile << "\n";
+        }
+        areaFile.close();
+        logi("Area Saved on area.scv");
+    }
+
+\end{lstlisting}
+La funzione che la torre di controllo utilizza per decidere la prossima posizione da inviare ad un particolare drone
+\begin{lstlisting}[style=customcpp, caption={da tower.cpp}]
+    void Tower::calcolateDronePath(Drone drone) {
+        // Check Active Block
+        std::vector<Block> *blocks = this->area->getBlocks();
+        for (Block& block : *blocks) {
+            if (block.getAssignment() == drone.id) {
+                // Check block cells
+                if (block.getLastX() != drone.posX || block.getLastY() != drone.posY) {
+                    block.setLastX(drone.posX);
+                    block.setLastY(drone.posY);
+                }
+                int x = block.getLastX() + block.getDirX();
+                int y = block.getLastY();
+                if (x == this->x && y == this->y) {
+                    logi("Skipping Tower Cell");
+                    // Safe because the tower is in the middle
+                    x += block.getDirX();
+                }
+                if (x >= block.getX() + block.getWidth() || x < block.getX()) {
+                    y += block.getDirY();
+                    x -= block.getDirX();
+                    if (y > block.getY() + block.getHeight() || y < block.getY()) {
+                        // Reset Block and Associate a new One
+                        this->associateBlock(drone);
+                        block.reset(this->x, this->y);
+                        return;
+                    }
+                    block.setDirX(-block.getDirX());
+                }
+                LocationMessage *location = new LocationMessage(generateMessageId());
+                location->setLocation(x, y);
+                this->channel->sendMessageTo(drone.id, location);
+                delete location; 
+                return;
+            }
+        }
+        // Not Returned before -> no Block associated
+        this->associateBlock(drone);
+    }
+\end{lstlisting}
 
 \end{document}
+

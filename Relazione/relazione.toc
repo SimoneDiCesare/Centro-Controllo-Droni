@@ -4,5 +4,14 @@
 \contentsline {subsection}{\numberline {2.2}Requisiti di sistema}{5}{subsection.2.2}%
 \contentsline {subsection}{\numberline {2.3}Diagrams}{6}{subsection.2.3}%
 \contentsline {subsection}{\numberline {2.4}Algoritmo}{6}{subsection.2.4}%
-\contentsline {subsubsection}{\numberline {2.4.1}State diagram}{10}{subsubsection.2.4.1}%
-\contentsline {subsubsection}{\numberline {2.4.2}Scelte progettuali}{11}{subsubsection.2.4.2}%
+\contentsline {subsubsection}{\numberline {2.4.1}State diagram}{9}{subsubsection.2.4.1}%
+\contentsline {subsubsection}{\numberline {2.4.2}Scelte progettuali}{9}{subsubsection.2.4.2}%
+\contentsline {section}{\numberline {3}Protocollo di comunicazione}{10}{section.3}%
+\contentsline {subsection}{\numberline {3.1}Scambio di messaggi}{10}{subsection.3.1}%
+\contentsline {subsection}{\numberline {3.2}La classe Channel}{11}{subsection.3.2}%
+\contentsline {subsubsection}{\numberline {3.2.1}Thread Safety}{11}{subsubsection.3.2.1}%
+\contentsline {subsection}{\numberline {3.3}La classe Message}{11}{subsection.3.3}%
+\contentsline {subsubsection}{\numberline {3.3.1}Costruttori}{11}{subsubsection.3.3.1}%
+\contentsline {subsubsection}{\numberline {3.3.2}Lista Messaggi}{12}{subsubsection.3.3.2}%
+\contentsline {subsection}{\numberline {3.4}Message Sequence Chart UML}{14}{subsection.3.4}%
+\contentsline {section}{\numberline {4}Implementazione}{15}{section.4}%
