@@ -24,6 +24,7 @@
 \usepackage{adjustbox}
 \usepackage{multicol}
 \usepackage{listings}
+\usepackage{longtable}
 \setlist{nolistsep} % Rimuove lo spazio extra tra gli elementi della lista
 
 \definecolor{comment}{rgb}{0.5, 0.5, 0.5}
@@ -77,7 +78,7 @@
     pdfpagemode=FullScreen,
 }
 
-\setlength{\parindent}{0pt}
+\setlength{\parindent}{10 pt}
 \setlength{\parskip}{5pt}
 
 
@@ -119,6 +120,14 @@ I droni partiranno dalla torre di controllo che si trova al centro dell'area da 
 Ogni drone ha un'autonomia limitata (misurata in minuti in volo) e una velocità massima. 
 La torre dovrà gestire gli spostamenti di ogni drone facendo in modo che tornino alla torre prima che la batteria sia del tutto esaurita. 
 Quando i droni si trovano nella torre di controllo sono considerati in carica e il tempo di ricarica può variare da drone a drone.
+
+\paragraph*{Dati sperimentali:}
+Si assume che:
+\begin{enumerate}
+    \item Ogni drone si muove alla velocità costante di $30\ km/h$
+    \item Il tempo di ricarica varia tra le 2 e le 3 ore 
+    \item Un punto si dice visitato se si trova nel raggio di 10 m da un drone
+\end{enumerate}
 \paragraph*{Idea di soluzione:}
 Abbiamo scelto di modellare il problema con un sistema che agisce sulla torre di controllo e ricarica che a sua volta controlla i droni.
 Dunque la torre invia ad ogni drone le coordinate del punto sull'area da raggiunge secondo un sistema di volo a "tappe".
@@ -139,20 +148,13 @@ il più frequentemente possibile, tenendo conto dei punti visitati, dei droni in
 Per funzionare, il sistema ha bisogno dei seguenti requisiti:
 \begin{itemize}
     \item dimensione dell'area\\
-    dato che l'area verrà divisa in blocchi, per ogni blocco è di interesse:
+    Ogni punto dell'area è identificato dalla sua posizione in una matrice di punti e di quei punti ci interessa solo:
     \begin{itemize}
-        \item limite alto superiore
-        \item limite basso inferiore
-        \item punto di partenza (o ultimo punto visitato)
-        \item Ogni punto dell'area è identificato dalla sua posizione in una matrice di punti e di quei punti ci interessa solo:
-        \begin{itemize}
-            \item il tempo trascorso dall'ultima visita.
-        \end{itemize}
+        \item il tempo trascorso dall'ultima visita.
     \end{itemize}
     \item numero di droni\\
     per ogni drone è di interesse:
     \begin{itemize}
-        \item id: identificativo univoco seriale
         \item Stato : tra i stati precedentemente elencati
         \item posizione 
         \item carica residua (in minuti)
@@ -162,7 +164,6 @@ Per funzionare, il sistema ha bisogno dei seguenti requisiti:
     \end{itemize}
     
 \end{itemize}
-\newpage
 \subsection{Requisiti di sistema}
 Il sistema deve rispettare i seguenti requisiti:
 \begin{enumerate}
@@ -180,7 +181,7 @@ Il sistema deve rispettare i seguenti requisiti:
             \item il drone è scarico e sta tornando alla torre
             \item il drone ha visitato tutto il blocco e si sta posizionando verso il punto di partenza di un'altro blocco
         \end{enumerate}
-        \item Un drone può volare verso un punto diverso da quello della torre se e solo se il suo tempo di volo residuo è maggiore del tempo che serve al drone per andare dalla sua posizione attuale a quella della torre
+        \item Un drone può volare verso un punto diverso da quello della torre se e solo se il suo tempo di volo residuo è maggiore del tempo che serve al drone per tornare alla torre \textit{(più un valutato margine di errore)}
     \end{enumerate}
     \item Torre:
     \begin{enumerate}[label=1.\arabic*]
@@ -194,15 +195,6 @@ Il sistema deve rispettare i seguenti requisiti:
     \end{enumerate} 
 \end{enumerate}
 \newpage
-\subsection{Diagrams}
-\begin{figure}[htbp]
-    \centering
-    \includegraphics[height = 4 cm]{image/ER1.png}%
-    \qquad\qquad
-    \includegraphics[height = 4 cm]{image/UML1.png}
-    \caption{schema ER e UML}
-\end{figure}
-
 
 \subsection{Algoritmo}
 Contando di poter ottenere per ogni drone, una tupla contenente almeno \{\textit{Id, Posizione, Stato, Blocco}\} di tutti i droni che si sono connessi alla torre e le dimensioni dell'area da sorvegliare, la torre inizia a seguire il seguente algoritmo.
@@ -216,7 +208,7 @@ Il problema può essere gestito seguendo i seguenti passaggi:
 
     \item Ogni drone si dirige al punto di partenza del blocco assegnatogli. Non appena lo raggiunge lo comunica alla torre.
 
-    \item Quindi la torre azzera il tempo di visita dell'area $20\times 20$ centrata nella posizione del drone e gli invia il prossimo punto da raggiungere
+    \item Quindi la torre azzera il tempo di visita dell'area $10\sqrt 2\times 10\sqrt 2$ (\textit{la scelta della dimensione verrà approfondita in seguito}) centrata nella posizione del drone e gli invia il prossimo punto da raggiungere
      per scansionare tutto il blocco.
 
     \item Quando il drone ha visitato tutto il blocco gli viene assegnato il blocco disponibile che contiene il punto non visitato da più tempo. Il loop continua dal punto 3.
@@ -230,24 +222,35 @@ Il problema può essere gestito seguendo i seguenti passaggi:
 \end{enumerate}
 Questo è l'idea principale per far si che tutti i punti vengano visitati il più frequentemente possibile.
 Questo ciclo viene ripetuto finche l'utente non interrompe il programma o tutti i droni "muoiono".
+\subsection{Diagrams}
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[height = 4 cm]{image/ER.png}%
+    \qquad\qquad
+    \includegraphics[height = 4 cm]{image/UML1.png}
+    \caption{schema ER e UML}
+\end{figure}
+
+
 \begin{figure}[h]
     \centering
     \includegraphics[height = 8 cm]{image/DroniInArea.png}%
     \ 
     \includegraphics[height = 4 cm]{image/DroneInBlock.png}
-    \caption{Esempio di area suddivisa in blocchi. Nel dettaglio a destra oltre al percorso seguito dal drone, viene evidenziata come più "calda" l'area visitata da meno tempo e più "fredda" l'area appena vista.}
+    \caption{\small{Esempio di area suddivisa in blocchi. Nel dettaglio a destra oltre al percorso seguito dal drone, viene evidenziata come più "calda" l'area visitata da meno tempo e più "fredda" l'area appena vista.}}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \includegraphics[height = 16 cm]{image/FlowCharts.png}
-    \caption{FlowChart della torre e del drone. Nota bene, nel FlowChart viene assunto che il drone e la torre siano già connessi}
+    \includegraphics[height = 13 cm]{image/FlowCharts.png}%
+    
+    \caption{\small{FlowChart della torre e del drone. Nota bene, nel FlowChart viene assunto che il drone e la torre siano già connessi. Il Flow Chart del drone ne rappresenta il ciclo di vita dal momento che parte dalla torre al momento che vi rientra.}}
     
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \includegraphics[height = 17 cm]{image/activitiDiagram.png}
+    \includegraphics[height = 17 cm]{image/activityDiagram.png}
     \caption{Activity diagram del sistema di interazione e decisione tra torre e drone, nel diagramma sono mostrate due barriere in cui drone e torre si sincronizzano per scambiarsi i messaggi principali mentre è lasciato implicito l'handler message di entrambi per messaggi di check.}
     
 \end{figure}
@@ -272,7 +275,7 @@ Definiamo quindi $6$ stati in cui ogni drone può trovarsi:
 \end{figure}
 \subsubsection{Scelte progettuali}
 \paragraph*{Divisione dei blocchi}
-Dato che un punto si considera visitato se si trova nel raggio di 10 metri da un drone, possiamo discretizzare l'area rappresentandola come una matrice di case quadrate di dimensione $10\sqrt{2} \times 10\sqrt{2}$
+Dato che un punto si considera visitato se si trova nel raggio di 10 metri da un drone, possiamo discretizzare l'area rappresentandola come una matrice di celle quadrate di dimensione $10\sqrt{2} \times 10\sqrt{2}$
 \begin{figure}[h]
     \centering
     \includegraphics[height = 5 cm]{image/areedroni.png}
@@ -310,16 +313,19 @@ Dunque ogni elemento nella coda rappresenta l'id di un messaggio con il seguente
     \item $ID$ rappresenta l'id del mittente
     \item $mID$ rappresenta l'identificatore univoco dell'elemento nel canale.
 \end{itemize}
-
-Il contenuto del messaggio si ottiene inserendo in un apposito \textbf{HashMap} l'$mID$ del messaggio.
+Il contenuto di un messaggio $m$ è salvato in una \textit{HashMap} usando come chiave l'$mID$ del messaggio.
 \subsection{La classe Channel}
 Per gestire agevolmente la ricezione e l'invio dei messaggio è stata implementata la classe Channel, la quale gestisce un canale di un attore. Per inviare e ricevere messaggi, la classe channel presenta due metodi:
-I messaggi vengono letti e scritti dalla coda utilizzando \textbf{"LPUSH c:id message\_id"} per inserire un messaggio, ed \textbf{"RPOP c:id"} per estrarre il primo messaggio arrivato.
+\begin{itemize}
+    \item I messaggi vengono aggiunti alla coda utilizzando \verb|LPUSH c:id message_id| e salvati nell'HashMap con \verb|”HSET message_id {params}|
+    \item In fase di lettura invece, viene utilizzato il metodo \verb|RPOP c:id| per estrarre il \verb|message_id|, e poi \verb|HGETALL message_id| per recuperarne il contenuto.
+\end{itemize}
+Che costituiscono le due funzioni principali per inviare e ricevere messaggi:
 
 \textbf{void sendMessageTo(int channelId, Message \&message)}\\
-Questo metodo permette di aggiungere alla lista di messaggi di channelId il messaggio message tramite i due comandi:
-
-\begin{lstlisting}[style=customcpp, caption={da tower.cpp}]
+Questo metodo permette di creare il messaggio su redis (quindi di creare una HashMap con $id = m:cID:mID$ e con le sue coppie $(kX,vX)$)
+e di inserire l'ID del messaggio all'interno della coda.
+\begin{lstlisting}[style=customcpp]
     // Creazione del messaggio su redis
     hset m:{this.id}:{message.id} {message.parseMessage()}
     
@@ -327,9 +333,16 @@ Questo metodo permette di aggiungere alla lista di messaggi di channelId il mess
     lpush c:{channelId} m:{this.id}:{message.id} 
 \end{lstlisting}
 
-\textbf{Message* awaitMessage(long timeout = -1)}\\
+\textbf{Message* awaitMessage(long timeout = 0)}\\
 Questo metodo serve per aspettare l'arrivo di un messaggio all'interno di un canale, per poi leggerlo e ritornarlo.
 Il parametro \textbf{timeout}, se diverso da -1, imposta un tempo massimo per l'attesa di un messaggio.
+\begin{lstlisting}[style=customcpp]
+    // Letture dell'id da redis -> restituisce un id sula variabile message_id
+    BRPOP c:{this.id} timeout
+
+    // Lettura contenuto del messaggio
+    HGETALL message_id
+\end{lstlisting}
 \subsubsection{Thread Safety}
 
 La Classe channel è thread safe, poiché gestisce le due funzioni \textbf{sendMessageTo} e \textbf{awaitMessage} tramite due mutex:
@@ -338,12 +351,13 @@ La Classe channel è thread safe, poiché gestisce le due funzioni \textbf{sendM
     \item Un mutex in lettura, che viene lockato in attesa di una risposta da redis quando si tenta di leggere un messaggio dal canale.
 \end{itemize}
 
-Si è deciso di dividere le operazioni tra due mutex per questione di efficienza, così che mentre un attore è in attesa di un messaggio,
+Si è deciso di dividere le operazioni tra due mutex per questione di responsività, così che mentre un attore è in attesa di un messaggio,
 possa continuare a fare altre operazioni in scrittura per aggiornare il suo stato agli occhi degli altri attori (nel nostro caso, 
 torna utile per ridurre i tempi di attesa di risposta tra la torre ed i droni)
+\newpage
 \subsection{La classe Message}
 La classe Message è la classe che rappresenta un messaggio di un canale.
-\subsubsection{Costruttori}
+\subsubsection{Costruttori e Metodi}
 I costruttori della classe Message sono due:
 \begin{itemize}
     
@@ -356,17 +370,15 @@ I costruttori della classe Message sono due:
         Prende come parametro un intero che rappresenta l'id del messaggio.
 
 \end{itemize}
-In aggiunta, questa classe presenta due metodi virtuali che deve implementare ogni tipo di messaggio:\\
+In aggiunta, questa classe presenta due metodi virtuali che deve implementare ogni tipo di messaggio:
 \begin{itemize}
     \item \textbf{void parseResponse(RedisResponse* response)}\\
-        Questo metodo serve a ricevere una Risposta da un Comando Redis, e tramutarla in messaggio. Dietro le quinte, quello che viene fatto è:
-        \begin{enumerate}
-            \item Inviare un comando a redis del tipo \textit{hgetall n:id:mid}
-            \item Controllare la validità della risposta
-            \item Creare un messaggio tramite il costruttore:\\ \textit{Message(std::string id)}
-            \item Parsare la risposta ottenuta tramite: \\ \textit{message.parseResponse(response)}
-        \end{enumerate}
-    \item\textbf{std::string parseMessage()}\\
+        Questo metodo serve a ricevere una Risposta da un Comando Redis, e tramutarla in messaggio. 
+        La funzione prende una risposta redis che \underline{deve} essere di tipo \verb|VECTOR|, e ne legge i parametri a coppie. 
+        
+        Per esempio, se si leggesse un messaggio\textit{ LocationMessage}, la sua funzione di parsing legge all'interno della riposta 
+        la chiave $x$, e setta la propria $x$ a quella nella risposta.
+    \item\textbf{std :: string parseMessage()}\\
         Questo metodo serve a trasformare i dati contenuti nel messaggio in una stringa della forma:
         \begin{verbatim}
             type type_value p1 v1 p2 v2 p3 v3
@@ -377,9 +389,15 @@ In aggiunta, questa classe presenta due metodi virtuali che deve implementare og
 
 
 
-\textbf{Esempio:} La classe PositionMessage, che serve per mandare la posizione di un drone alla torre, presenterà il corpo della funzione parseMessage() di questo tipo:
-\begin{lstlisting}[style=customcpp, caption={da tower.cpp}]
-    return "type 2 x " + std::to_string(this->x) + " y " + std::to_string(this->y);
+\textbf{Esempio:} LocationMessage, che serve scambiare una posizione tra drone e torre e viceversa, presenterà il corpo della funzione parseMessage() di questo tipo:
+\begin{lstlisting}[style=customcpp]
+    std::string LocationMessage::parseMessage() {
+        std::string data = "type " + std::to_string(this->getType());
+        data = data + " x " + std::to_string(this->x);
+        data = data + " y " + std::to_string(this->y);
+        data = data + " movement_type " + std::to_string(this->movementType);
+        return data;
+}
 \end{lstlisting}
 \subsubsection{Lista Messaggi}
 
@@ -402,7 +420,7 @@ In aggiunta, questa classe presenta due metodi virtuali che deve implementare og
     PingMessage & 1 & nessuno & Semplice messaggio di Ping \\
     \hline
     \rule{0pt}{3ex} % Aggiungi spazio verticale
-    DroneInfoMessage & 2 & {params} & Scambio parametri drone$\rightarrow$torre \\
+    DroneInfoMessage & 2 & \{params\} & Scambio parametri drone$\rightarrow$torre \\
     \hline
     \rule{0pt}{3ex} % Aggiungi spazio verticale
     LocationMessage & 3 & x: int, y: int & Nuova posizione per drone dalla torre \\
@@ -414,61 +432,38 @@ In aggiunta, questa classe presenta due metodi virtuali che deve implementare og
     DisconnectMessage & 5 & nessuno & Disconnette l'associazione drone$\leftrightarrow$torre \\
     \hline
     \end{tabularx}
-\end{adjustbox}
+\end{adjustbox}\vspace{5 mm}
 
-\textbf{AssociateMessage}
-
-\begin{myindentpar}{0.4cm}
+\textbf{AssociateMessage}\\
 Messaggio inviato dal drone alla torre per richiedere l'associazione al pool di droni.
 La torre risponde ritornando l'id che associerà al drone per riconoscimento all'interno della formazione.
 Il messaggio presenta il campo \textbf{drone\_id}, che rappresenta l'id temporaneo de drone in richiesta, oppure l'id associato dalla torre in caso di associazione effettuata.
-Inoltre, il messaggio contiene la posizione della torre per gestire con precisione il punto di partenza dei droni.
-\end{myindentpar}
+Inoltre, il messaggio contiene la posizione della torre per gestire con precisione il punto di partenza dei droni.\\
 
-\textbf{PingMessage}
-\begin{myindentpar}{0.4cm}
+\textbf{PingMessage}\\
 Messaggio inviato dalla torre al drone per verificarne l'esistenza. Viene generalmente utilizzato quando la torre non riceve update dal drone per più di 2 minuti.
-Questo messaggio non presenta parametri.
-\end{myindentpar}
+Questo messaggio non presenta parametri.\\
 
-\textbf{DroneInfoMessage}
-\begin{myindentpar}{0.4cm}
+\textbf{DroneInfoMessage}\\
 Messaggio per aggiornare le info di un drone all'interno del db della torre. Viene generalmente mandato dalla torre al drone, per richiedere un update dello stato del drone e verificarne il funzionamento.
 I parametri del messaggio sono i campi del drone:
-\begin{itemize}
-    \item drone\_id
-    \item x
-    \item y
-    \item drone\_state
-    \item charge\_time
-    \item battery\_autonomy
-\end{itemize}
-\end{myindentpar}
 
-\textbf{LocationMessage}
-\begin{myindentpar}{0.4cm}
+\indent \textbf{(\underline{drone\_id}, x, y, drone\_state, charge\_time, battery\_autonomy)}\\
+
+\textbf{LocationMessage}\\
 Messaggio con duplice scopo:
 \begin{itemize}
     \item Se inviato dalla torre al drone, significa che la torre sta impostando delle nuove coordinate da raggiungere al drone. Dunque, in lettura il drone aggiornerà le coordinate e deciderà cosa fare di conseguenza.
     \item Se inviato dal drone alla torre, rappresenta un update della posizione del drone, il quale ha completato il movimento assegnatogli in precedenza.
 \end{itemize}
-Il messaggio presenta i seguenti parametri:
-\begin{itemize}
-    \item x: La posizione sull'asse x
-    \item y: La posizione sull'asse y
-\end{itemize}
-\end{myindentpar}
+I parametri del drone indicano sempre una posizione sul piano cartesiano (l'area da monitorare)\\
 
-\textbf{RetireMessage}
-\begin{myindentpar}{0.4cm}
+\textbf{RetireMessage}\\
 Messaggio inviato dal drone per notificare la necessità di rientro per low battery.
-In questo caso, la torre invia al drone un LocationMessage con le coordinate precise della torre, e lo mette in stato retiring per ottimizzare il percorso di rientro.
-\end{myindentpar}
+In questo caso, la torre invia al drone un LocationMessage con le coordinate precise della torre, e lo mette in stato retiring per ottimizzare il percorso di rientro.\\
 
-\textbf{DisconnectMessage}
-\begin{myindentpar}{0.4cm}
+\textbf{DisconnectMessage}\\
 Messaggio che rimuove l'associazione tra la torre ed il drone. Permette di liberare risorse su redis e sul database.
-\end{myindentpar}
 \newpage
 
 \subsection{Message Sequence Chart UML}
@@ -501,6 +496,94 @@ Di seguito vengono mostrati alcuni \textbf{Message Sequence Chart UML} che mostr
     \end{enumerate}
 
 \end{tabular}
+\newpage
+\section{Database}
+
+All'interno del progetto viene sfruttato un database \textbf{PostgreSQL} per salvare dati utili in maniera persistente all'interno della torre.
+
+\subsection{Struttura del Database}
+
+Il Database presenta un'unica tabella: \textbf{drone}, la quale contiene le informazioni dei vari droni con il seguente schema:
+
+\begin{longtable}{|c|c|p{0.6\textwidth}|}
+\hline
+\textbf{Nome} & \textbf{Tipo} & \textbf{Info} \\
+\hline
+id & int 64bit & Id $>$ 0 univoco del drone \\
+\hline
+x & integer & Coordinata x del drone all'ultimo update \\
+\hline
+y & integer & Coordinata y del drone all'ultimo update \\
+\hline
+battery\_autonomy & int 64bit & Durata della batteria all'ultimo update \\
+\hline
+charge\_time & int 64bit & Durata della ricarica della batteria del drone \\
+\hline
+dstate & int & Stato del drone all'ultimo update \\
+\hline
+last\_update & int 64bit & Timestamp dell'ultimo update \\
+\hline
+\end{longtable}
+
+Il campo \texttt{dstate} contiene valori interi associati all'enum del codice C++:
+
+\begin{lstlisting}[style=customcpp]
+    enum DroneState {
+        CHARGING,
+        READY,
+        WAITING,
+        MONITORING,
+        RETURNING,
+        DEAD
+    }
+\end{lstlisting}
+
+\subsection{Implementazione}
+
+Vengono sfruttate la libreria \textbf{pqxx} per creare una connessione ed eseguire query con il database PostgreSQL.
+L'eseguibile della torre prende come parametro facoltativo un file di properties, con la seguente struttura:
+\begin{verbatim}
+[Opzione]=Valore
+\end{verbatim}
+Un esempio di file base è il seguente:
+\begin{verbatim}
+[Ip]=http://mydomain.com/db
+[User]=root
+\end{verbatim}
+
+\subsubsection{Lista DB File Properties}
+
+\begin{longtable}{|c|c|p{0.6\textwidth}|}
+\hline
+\textbf{Opzione} & \textbf{Tipo} & \textbf{Info} \\
+\hline
+Ip & String & Ip alla connessione PostgreSQL \\
+\hline
+Port & Integer & Porta d'accesso del db (solo in caso di URL) \\
+\hline
+User & String & Username per accedere al db \\
+\hline
+Password & String & Password in chiaro per accedere al db \\
+\hline
+DbName & String & Nome del db da utilizzare \\
+\hline
+\end{longtable}
+
+\textbf{NOTA:} \\
+Le properties di base sono quelle di default di PostgreSQL (ip e port), con un utente chiamato \textbf{tower} senza password.
+
+\subsubsection{Procedura di Connessione}
+
+Una volta lette le properties, la torre crea una connessione con il db (in caso di fail, l'eseguibile si interrompe con un errore).
+Una volta connessa, la torre controllerà l'esistenza della tabella \texttt{drone}, e si metterà in attesa di ricevere dei droni per iniziare il controllo dell'area.
+Ogni qualvolta che un drone si connette alla torre, viene salvata la nuova entry del drone nel db.
+
+\textbf{ID DRONE:} \\
+Il protocollo di comunicazione prevede che il drone si autocrei un proprio id da mandare alla torre.
+Di conseguenza, la torre dovrà controllare se l'id autogenerato dal drone sia valido all'interno del db (non preesistente), e in caso dovrà assegnarne uno nuovo.
+\subsubsection{La tabella Blocco}
+La tabella block ha senso esclusivamente nel contesto dell'algoritmo di guida dei droni pertanto seppure è presente nel diagramma ER visto in precedenza non è di interesse nel database finale.
+
 \newpage
 \section{Implementazione}
 Di seguito vengono riportate parti del codice implementato 

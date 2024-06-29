@@ -1,17 +1,23 @@
 \contentsline {section}{\numberline {1}Descrizione Generale}{3}{section.1}%
 \contentsline {section}{\numberline {2}Analisi del software}{4}{section.2}%
 \contentsline {subsection}{\numberline {2.1}Requisiti utente}{4}{subsection.2.1}%
-\contentsline {subsection}{\numberline {2.2}Requisiti di sistema}{5}{subsection.2.2}%
-\contentsline {subsection}{\numberline {2.3}Diagrams}{6}{subsection.2.3}%
-\contentsline {subsection}{\numberline {2.4}Algoritmo}{6}{subsection.2.4}%
-\contentsline {subsubsection}{\numberline {2.4.1}State diagram}{9}{subsubsection.2.4.1}%
-\contentsline {subsubsection}{\numberline {2.4.2}Scelte progettuali}{9}{subsubsection.2.4.2}%
-\contentsline {section}{\numberline {3}Protocollo di comunicazione}{10}{section.3}%
-\contentsline {subsection}{\numberline {3.1}Scambio di messaggi}{10}{subsection.3.1}%
-\contentsline {subsection}{\numberline {3.2}La classe Channel}{11}{subsection.3.2}%
-\contentsline {subsubsection}{\numberline {3.2.1}Thread Safety}{11}{subsubsection.3.2.1}%
+\contentsline {subsection}{\numberline {2.2}Requisiti di sistema}{4}{subsection.2.2}%
+\contentsline {subsection}{\numberline {2.3}Algoritmo}{5}{subsection.2.3}%
+\contentsline {subsection}{\numberline {2.4}Diagrams}{5}{subsection.2.4}%
+\contentsline {subsubsection}{\numberline {2.4.1}State diagram}{8}{subsubsection.2.4.1}%
+\contentsline {subsubsection}{\numberline {2.4.2}Scelte progettuali}{8}{subsubsection.2.4.2}%
+\contentsline {section}{\numberline {3}Protocollo di comunicazione}{9}{section.3}%
+\contentsline {subsection}{\numberline {3.1}Scambio di messaggi}{9}{subsection.3.1}%
+\contentsline {subsection}{\numberline {3.2}La classe Channel}{10}{subsection.3.2}%
+\contentsline {subsubsection}{\numberline {3.2.1}Thread Safety}{10}{subsubsection.3.2.1}%
 \contentsline {subsection}{\numberline {3.3}La classe Message}{11}{subsection.3.3}%
-\contentsline {subsubsection}{\numberline {3.3.1}Costruttori}{11}{subsubsection.3.3.1}%
+\contentsline {subsubsection}{\numberline {3.3.1}Costruttori e Metodi}{11}{subsubsection.3.3.1}%
 \contentsline {subsubsection}{\numberline {3.3.2}Lista Messaggi}{12}{subsubsection.3.3.2}%
-\contentsline {subsection}{\numberline {3.4}Message Sequence Chart UML}{14}{subsection.3.4}%
-\contentsline {section}{\numberline {4}Implementazione}{15}{section.4}%
+\contentsline {subsection}{\numberline {3.4}Message Sequence Chart UML}{13}{subsection.3.4}%
+\contentsline {section}{\numberline {4}Database}{14}{section.4}%
+\contentsline {subsection}{\numberline {4.1}Struttura del Database}{14}{subsection.4.1}%
+\contentsline {subsection}{\numberline {4.2}Implementazione}{14}{subsection.4.2}%
+\contentsline {subsubsection}{\numberline {4.2.1}Lista DB File Properties}{14}{subsubsection.4.2.1}%
+\contentsline {subsubsection}{\numberline {4.2.2}Procedura di Connessione}{15}{subsubsection.4.2.2}%
+\contentsline {subsubsection}{\numberline {4.2.3}La tabella Blocco}{15}{subsubsection.4.2.3}%
+\contentsline {section}{\numberline {5}Implementazione}{16}{section.5}%
