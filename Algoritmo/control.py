@@ -72,7 +72,7 @@ def approxBlock(nDrones):
     while w * h < nDrones:
         if (w+1)*h <= nDrones: w += 1
         else:h += 1
-    print("h",h,"w",w)
+    print("blocchi in altezza:",h,"blocchi in larghezza:",w)
     return h, w
 
 def create_blocks_2(area_dim, nDrones):
@@ -85,25 +85,49 @@ def create_blocks_2(area_dim, nDrones):
     widthBlock = int((area_dim + (w -1))/w)
     wasteHD = h*heightBlock - area_dim
     wasteWR = w*widthBlock - area_dim
+    wasteHU = 0
+    wasteWL = 0
     if wasteHD > heightBlock : 
         wasteHU = wasteHD//2
         wasteHD -= wasteHU
     if wasteWR > heightBlock : 
         wasteWL = wasteWR//2
         wasteWR -= wasteWL
-    print("widthBlock: ",widthBlock,"wasteW: ", wasteWR)
+    print("heightBlock:",heightBlock,", widthBlock:", widthBlock)
+    print("wasteHU:", wasteHU,", wasteWL",wasteWL)
+    print("wasteHD:",wasteHD,", wasteWR:",wasteWR)
+    blocks.append([0,0,heightBlock-wasteHU, widthBlock-wasteWL])
     for y in range(h-1):
         for x in range(w-1):
-            blocks.append([heightBlock*y, widthBlock*x, heightBlock*(y+1), widthBlock*(x+1)])
+            if x == 0 and y == 0: continue
+            inizio_y = heightBlock*y - wasteHU
+            if inizio_y < 0: inizio_y = 0
+            inizio_x = widthBlock*x - wasteWL
+            if inizio_x < 0: inizio_x = 0
+            blocks.append([inizio_y, inizio_x, heightBlock+inizio_y, widthBlock+inizio_x])
+
+    offsetInizio_x = widthBlock*(w-1)-wasteWL
+    offsetFine_x = offsetInizio_x+widthBlock-wasteWR
     for y in range(h-1):
-        blocks.append([heightBlock*y, widthBlock*(w-1), heightBlock*(y+1), widthBlock*(w)-wasteWR])
+        inizio_y = heightBlock*y - wasteHU
+        if inizio_y < 0: inizio_y = 0
+        if inizio_y == 0 and offsetInizio_x == 0 : continue
+        blocks.append([inizio_y, offsetInizio_x, inizio_y + heightBlock, offsetFine_x])
+
+    offsetInizio_y = heightBlock*(h-1)-wasteHU
+    offsetFine_y = offsetInizio_y+heightBlock-wasteHD
     for x in range(w-1):
-        blocks.append([heightBlock*(h-1), widthBlock*(x), heightBlock*(h)-wasteHD, widthBlock*(x+1)])
-    blocks.append([heightBlock*(h-1), widthBlock*(w-1),heightBlock*(h)-wasteHD, widthBlock*(w)-wasteWR])
+        inizio_x = widthBlock*x - wasteWL
+        if inizio_x < 0: inizio_x = 0
+        if offsetInizio_y == 0 and inizio_x == 0 : continue
+        blocks.append([offsetInizio_y, inizio_x, offsetFine_y, inizio_x+widthBlock])
+
+    blocks.append([offsetInizio_y,offsetInizio_x,offsetFine_y,offsetFine_x])
     return blocks    
 
 def assegna(block, assignment, mtx):
     free = [b for b in block if b not in assignment.values()]
+    if free == []: return None
     res = free[0]
     res_val = res.val(mtx)
     for bl in free:
@@ -204,25 +228,24 @@ def control(mat):
     vis.salva(mat)
 #versione CON movimenti in diagonale: i movimenti in diagonale non modificano la mappa ne' la matrice.
 def controlD(mat):
-    print("dim: ", dim)
     drones = [dr.Drone(common_time, origin, d) for d in range(Ndrones)]
-    blocksIndex = create_blocks_2(dim, Ndrones//7)
+    average_charge = np.mean(np.array([d.chargetime for d in drones]))
+    average_time_of_fly = np.mean(np.array([d.time_of_fly for d in drones]))
+    n_sets = int((average_charge + average_time_of_fly-1)/average_time_of_fly +1)
+    blocksIndex = create_blocks_2(dim, Ndrones//n_sets)
     block = [blk.Block((b[0],b[1]),(b[2], b[3]),origin) for b in blocksIndex]
     recharge = [1061*4 for d in drones]
     dati = np.zeros((3,t_iter+1), dtype= float)
     assignment = dict()
+    for d in drones:
+        assignment[d] = None
     diagonal = [0 for d in drones]
     destination = [(0,0) for d in drones]
-    
-
     if block == []:
         return "troppi droni per la dimensione dell'area"
-    for b in block:
-        print(b,size(b))
-    print(len(block))
-    
-    for iteration in range(t_iter):
-        
+    print(f"Area: {LATO} km^2 / {dim}x{dim} matrix\ndroni totali: {Ndrones}, \n\taverage_charge: {average_charge}, average_time_of_fly: {average_time_of_fly}, n_sets:{n_sets} \nnumero di blocchi: {len(block)}")
+    for iteration in tqdm(range(t_iter),desc="peni"):
+       
         for r in [dro for dro in drones if dro.state == "Ready"]:
             assignment[r] = assegnaMax(block, assignment,mat)
             if assignment[r] != None:
@@ -242,7 +265,7 @@ def controlD(mat):
                 
                 
             else:
-                if assignment[d] != None:
+                if d.state != "Ready":
                     
                     if calculate_time_diag(d.position, origin) >= d.time_of_fly and d.state != "Diagonal": #se il drone è scarico rientra
                         assignment[d] = None
@@ -253,7 +276,7 @@ def controlD(mat):
 
                         
                     elif d.state == "Diagonal": 
-                        diagonal[d.id]-=1   
+                        diagonal[d.id] -= 1   
                         if diagonal[d.id] == 0:
                             d.position = destination[d.id]
                             d.state = "Flying"
@@ -288,7 +311,7 @@ def controlD(mat):
                             d.state = "Dead"
                             print(f"Il drone {d.id} è morto nel punto:{d.position}")
                     d.time_of_fly-=1
-            print(d, f"blocco: {assignment[d]}, diag: {diagonal[d.id]}" )
+            #print(d, f"blocco: {assignment[d]}, diag: {diagonal[d.id]}" )
         #print(recharge)
         #vis.visualizza(mat)
         mat = mat + 1
@@ -302,8 +325,10 @@ def controlD(mat):
         dati[1,iteration] = maxx
         dati[2,iteration] = in_volo
         #print(f"it: {iteration}, avg: {avg}, max: {maxx}, in volo: {in_volo}")
-        
-    print(f"avg: {(sum(dati[0])/t_iter)*1.7}, max:{(max(dati[1]))*1.7/3600}, in volo:{sum(dati[2])/t_iter}")
+    
+    aver = np.mean(dati[0])
+    last_Max = np.max(dati[1])
+    print(f"avg: {int(aver//3600)}h, {int((aver%3600)//60)}m, {int(aver%60)}s , max: {int(last_Max//3600)}h, {int((last_Max%3600)//60)}m, {int(last_Max%60)}s, in volo:{np.mean(dati[2])}")
     vis.salva(mat)
 
 
@@ -317,20 +342,28 @@ if __name__ == "__main__":
     #in questa iterazione il drone si muove di STEP
     #ogni STEP indica 3.4 secondi. 
     DIM_CASELLA = 14.142135624 
-    LATO = 1000
+    LATO = 6000
     dim = int((LATO+DIM_CASELLA-0.000000001)/DIM_CASELLA) #per problema originale dim = 300
     common_time = 1061 #per problema originale dim = 1061
-    Ndrones = 14*14
+    Ndrones = 100
     origin = (int((dim-1)/2),int((dim-1)/2)) #presumendo che l'area sia QUADRATA
     t_iter = 20000
 #-----------
     mat = np.full((dim, dim), 1)
+    prova = np.array([
+        [1,2,3,4,5],
+        [1,2,3,4,5],
+        [1,2,3,4,5],
+        [1,2,3,4,5],
+        [1,2,3,4,5],
+    ])
+    #print(sum(prova[0]))
     controlD(mat)
-    
-    # blks_idx = create_blocks_2(dim, 17)
+   
+    # blks_idx = create_blocks_2(dim, Ndrones)
     # blks = [blk.Block((b[0],b[1]),(b[2], b[3]),origin) for b in blks_idx]
-    # print(blks)
-
+    # # print(blks)
+    # print(blks_idx)
     # for y in range(dim):
     #     for x in range(dim):
     #         mat[y,x] = whitchBlock(blks, (y,x))

@@ -5,7 +5,7 @@ def info(mat):
     for r in mat:
         summ = sum(r)
         massi.append(max(r))
-    return (summ/len(mat)**2, max(massi))
+    return (summ/(len(mat)**2), max(massi))
 
 
 

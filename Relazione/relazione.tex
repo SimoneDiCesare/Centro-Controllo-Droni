@@ -60,15 +60,6 @@
   {\normalfont\Large\bfseries} % Stile del titolo
   {\chaptername\ \thechapter}{10pt}{\Large}
 
-\titlespacing*{\chapter}{0pt}{-20pt}{20pt}
-
-\newenvironment{myindentpar}[1]%
-  {\begin{list}{}%
-          {\setlength{\leftmargin}{#1}}%
-          \item[]%
-  }
-  {\end{list}}
-
 \hypersetup{
     colorlinks=true,
     linkcolor=black,
@@ -78,27 +69,11 @@
     pdfpagemode=FullScreen,
 }
 
-\setlength{\parindent}{10 pt}
-\setlength{\parskip}{5pt}
-
 
 \makeindex[columns=3, title=Alphabetical Index, intoc]
-\hypersetup{
-    colorlinks=true,
-    linkcolor=blue!50!green,
-    filecolor=magenta,      
-    urlcolor=cyan,
-    pdftitle={Overleaf Example},
-    pdfpagemode=FullScreen,
-    }
+
 
 \newcommand\scalemath[2]{\scalebox{#1}{\mbox{\ensuremath{\displaystyle #2}}}}
-\definecolor{bananamania}{rgb}{0.98, 0.91, 0.71}
-\definecolor{amaranth}{rgb}{0.9, 0.17, 0.31}
-\definecolor{amethyst}{rgb}{0.6, 0.4, 0.8}
-\definecolor{darktangerine}{rgb}{1.0, 0.66, 0.07}
-\definecolor{cerise}{rgb}{0.87, 0.19, 0.39}
-\definecolor{babyblue}{rgb}{0.54, 0.81, 0.94}
 
 
 \title{Relazione su \\
@@ -202,7 +177,7 @@ Il problema può essere gestito seguendo i seguenti passaggi:
 \begin{enumerate}
     
     \item La torre di controllo conta i droni che si sono connessi e divide l'area da sorvegliare in $N$ blocchi \underline{tutti della stessa misura}
-     secondo una specifica funzione che fa in modo di avere più blocchi che droni.
+     secondo una specifica funzione approssima per eccesso i blocchi necessari per far volare tutti i droni.
 
     \item La torre assegna ad ogni drone \textit{"pronto a partire"} un blocco disponibile.
 
@@ -273,21 +248,28 @@ Definiamo quindi $6$ stati in cui ogni drone può trovarsi:
     \includegraphics[height = 8 cm]{image/StateDiagram.png}
     \caption{State diagram}
 \end{figure}
-\subsubsection{Scelte progettuali}
-\paragraph*{Divisione dei blocchi}
-Dato che un punto si considera visitato se si trova nel raggio di 10 metri da un drone, possiamo discretizzare l'area rappresentandola come una matrice di celle quadrate di dimensione $10\sqrt{2} \times 10\sqrt{2}$
+\subsection{Scelte progettuali}
+\paragraph*{Divisione delle celle}
+Dato che un punto si considera visitato se si trova nel raggio di 10 metri da un drone, possiamo discretezzare l'area rappresentandola come una matrice di celle quadrate di dimensione $10\sqrt{2} \times 10\sqrt{2}$
 \begin{figure}[h]
     \centering
     \includegraphics[height = 5 cm]{image/areedroni.png}
     \caption{L'area divisa in caselle della dimensione del quadrato inscritto nel cerchio di raggio 10}
 \end{figure}
-
-Abbiamo scelto di raggruppare le caselle in blocchi tutti uguale area per garantire equità nelle assegnazioni. 
-Data la variabilità delle dimensioni dell'area e del numero di droni in fase iniziale, non è sempre garantito che il numero di droni divida il numero caselle in un valore utile per costruire una matrice di blocchi, utilizziamo un valore di blocchi maggiore per garantirne la perfetta di visibilità in sottoaree uguali.
+\paragraph*{Divisione delle celle}
+Abbiamo scelto di raggruppare le caselle in blocchi circa della stessa area (la discretizzazione non garantisce la perfetta divisibilità) per garantire equità nelle assegnazioni. 
+Data la variabilità delle dimensioni dell'area e del numero di droni in fase iniziale, non è sempre garantito che il numero di droni divida il numero caselle in un valore utile per costruire una matrice di blocchi.
+Cerchiamo quindi due valori $h$ e $w$ tali che : $h * w > numero\ di\ droni$ e dividiamo l'area in $h\times w$ blocchi.
 Questo permette a tutti i droni \textit{READY} di volare contemporaneamente all'inizio del processo di monitoraggio e quindi ridurre il più possibile il tempo di visita medio dell'intera area.
 Anche se creare più blocchi ne riduce le dimensioni, questo non influisce sulle prestazioni del sistema in quanto ogni drone quando termina il ciclo di visita del suo blocco inizia a visitarne un altro e continua finché la batteria lo permette.
 
+\paragraph*{Tempi di ricarica}
+Sebbene l'algoritmo sia stato ideato per massimizzare il tempo di visita in un ciclo di carica della flotta di droni, questo non tiene conto del fatto che ogni drone può lunghi tempi di ricarica che possono superare anche di varie volte il tempo di volo di ogni drone.
+Per sopperire a questo rallentamento è molto efficacie considerare la divisione in blocchi dell'area come se si avesse a disposizione solo un' $n$-esima parte dei droni.\\
+Indichiamo con $n$ il numero di droni necessari per coprire il tempo di ricarica medio di un drone più uno (il tempo, medio, di volo del drone stesso). 
+In questo modo si distribuisce il numero di droni in volo durante il monitoraggio a beneficio sia del tempo di visita medio che massimo.
 
+Le differenze tra i vari approcci sono mostrate nella sezione risultati sperimentali.
 \paragraph*{Assegnamento dei blocchi}
 Per minimizzare il tempo di visita massimo e medio abbiamo sperimentato due criteri di scelta:
 \begin{enumerate}
@@ -317,7 +299,7 @@ Il contenuto di un messaggio $m$ è salvato in una \textit{HashMap} usando come 
 \subsection{La classe Channel}
 Per gestire agevolmente la ricezione e l'invio dei messaggio è stata implementata la classe Channel, la quale gestisce un canale di un attore. Per inviare e ricevere messaggi, la classe channel presenta due metodi:
 \begin{itemize}
-    \item I messaggi vengono aggiunti alla coda utilizzando \verb|LPUSH c:id message_id| e salvati nell'HashMap con \verb|”HSET message_id {params}|
+    \item I messaggi vengono aggiunti alla coda utilizzando \verb|LPUSH c:id message_id| e salvati \\nell'HashMap con \verb|”HSET message_id {params}|
     \item In fase di lettura invece, viene utilizzato il metodo \verb|RPOP c:id| per estrarre il \verb|message_id|, e poi \verb|HGETALL message_id| per recuperarne il contenuto.
 \end{itemize}
 Che costituiscono le due funzioni principali per inviare e ricevere messaggi:
@@ -579,7 +561,7 @@ Una volta connessa, la torre controllerà l'esistenza della tabella \texttt{dron
 Ogni qualvolta che un drone si connette alla torre, viene salvata la nuova entry del drone nel db.
 
 \textbf{ID DRONE:} \\
-Il protocollo di comunicazione prevede che il drone si autocrei un proprio id da mandare alla torre.
+Il protocollo di comunicazione prevede che il drone si crei un proprio id da mandare alla torre.
 Di conseguenza, la torre dovrà controllare se l'id autogenerato dal drone sia valido all'interno del db (non preesistente), e in caso dovrà assegnarne uno nuovo.
 \subsubsection{La tabella Blocco}
 La tabella block ha senso esclusivamente nel contesto dell'algoritmo di guida dei droni pertanto seppure è presente nel diagramma ER visto in precedenza non è di interesse nel database finale.

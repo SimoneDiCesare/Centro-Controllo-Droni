@@ -2,18 +2,17 @@
 ## nella relazione
 - [ ] Aggiungere monitor 
 - [ ] Aggiungere risultati sperimentali 
+- [ ] modificare parte criterio di assegnamento
 - [x] database
 
 ## Nel simulatore python
-- [ ] modificare divisioni blocchi python 
+- [x] modificare divisioni blocchi python 
 - [ ] simulazioni test 
 
 ## Nel resto del progetto
 - [ ] capire se i monitor sono giusti -> Non credo sia na cosa fattibile
-- [ ] capire come ottenere a run time informazioni dall'area monitorata
-    - [ ] e ottenerle\
-           A runtime si ottengono pure, però ne va di efficienza. Se devo stampare ogni tot l'area, il sistema si rallenta si.
-          La cosa più leggera che si può fare di sicuro è ottenere il tempo minimo nell'area, il massimo ed una media (anche se non so a cosa e se ci possa essere utile).
+- [ ] scrivere a runtime tempo di visita medio e tempo di visita massimo 
+- [ ] scrivere spostamenti dei droni in un log dedicato
 - [ ] pulire la repository da file vecchi
 - [ ] Scrivere un bel [README](README.md)
 
@@ -29,7 +28,7 @@
 Di definizioni, così come di ingegneria del software in generale, non ne sò nulla, quindi quando parli di requisiti o simili vado ad intuito sulle correzioni, ma non è detto che abbiano senso.\
 In più mi scuso se alcune correzioni che ti faccio in realtà sono per colpa mia che non ho tenuto aggiornato alcuni documenti ahahaha.
 ## Correzioni
-- [ ] La relazione, quando la apro, mi dà come titolo (quello visto dalla barra del brower/quello visto in alto a destra nella previsualizzazione delle pagine) "Overleaf Example", non so se puoi cambiarla
+- [x] La relazione, quando la apro, mi dà come titolo (quello visto dalla barra del brower/quello visto in alto a destra nella previsualizzazione delle pagine) "Overleaf Example", non so se puoi cambiarla
 - [x] Nella Figura 1 è improprio dire "canale redis lettura/scrittura", poiché sono dei socket redis quelli lettura/scrittura, mentre il canale è sempre e solo uno per attore.
 - [x] Al punto 2.1 credo sia improprio mettere i blocchi dentro questa sezione, poiché non fanno parte dei requisiti utente, bensì sono un oggetto sfruttato dalla torre per gestire l'area.\
   Mentre per i droni credo vadano tolti i parametri di ID e di stato, poiché sono sfruttati dal sistema ma non sono cose che il sistema deve sapere a priori.
@@ -84,4 +83,4 @@ In più mi scuso se alcune correzioni che ti faccio in realtà sono per colpa mi
     return data;
   }
   ```
-- [x] Mi sembra manchi la parte in cui espliciti che nel db non è presente la tabella dei Blocchi perchè tanto viene gestita dalla torre a livello di codice C.
+- [x] Mi sembra manchi la parte in cui espliciti che nel db non è presente la tabella dei Blocchi perché tanto viene gestita dalla torre a livello di codice C.

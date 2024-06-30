@@ -5,7 +5,7 @@
 \contentsline {subsection}{\numberline {2.3}Algoritmo}{5}{subsection.2.3}%
 \contentsline {subsection}{\numberline {2.4}Diagrams}{5}{subsection.2.4}%
 \contentsline {subsubsection}{\numberline {2.4.1}State diagram}{8}{subsubsection.2.4.1}%
-\contentsline {subsubsection}{\numberline {2.4.2}Scelte progettuali}{8}{subsubsection.2.4.2}%
+\contentsline {subsection}{\numberline {2.5}Scelte progettuali}{8}{subsection.2.5}%
 \contentsline {section}{\numberline {3}Protocollo di comunicazione}{9}{section.3}%
 \contentsline {subsection}{\numberline {3.1}Scambio di messaggi}{9}{subsection.3.1}%
 \contentsline {subsection}{\numberline {3.2}La classe Channel}{10}{subsection.3.2}%

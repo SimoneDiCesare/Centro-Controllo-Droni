@@ -1,5 +1,5 @@
 import matTools as mt 
-
+import numpy as np
 class Block:
     
     def __init__(self, ul, dr, origin):
@@ -16,11 +16,7 @@ class Block:
     def getWidth(self):
         return self.down_right[1]-self.up_left[1]
     def val(self, mat):
-        su = 0
-        for i in range(self.up_left[0], self.down_right[0]):
-            for j in range(self.up_left[1], self.down_right[1]):
-                su += mat[i,j]
-        return su
+        return np.sum(mat[self.up_left[0]:self.down_right[0],self.up_left[1]:self.down_right[1]])
     def __str__(self) -> str:
         return f"[{self.up_left, self.down_right}]"
 
