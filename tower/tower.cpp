@@ -291,6 +291,35 @@ void Tower::areaUpdateLoop() {
     logi("Max: " + std::to_string(max) + ", Min" + std::to_string(min));
 }
 
+void Tower::statistics(){
+    unsigned long long media = 0;
+    long long max = LLONG_MIN;
+    long long min = LLONG_MAX;
+    int tot = 0;
+    int visited = 0;
+    for(int i = 0; i < this->areaWidth; i++) {
+        for(int j = 0; j < this->areaHeight; j++) {
+            long long value = this->area->operator[](i)[j];
+            if (value != 0){
+                visited += 1;
+            }else{
+                value = this->startTime;
+            }  
+            media += value;
+            if (value > max) {
+                max = value;
+            }
+            if (value < min) {
+                min = value;
+            } 
+        }
+    }
+    float percentuale =  (static_cast<float>(visited) / tot) * 100;
+    std::cout <<visited  << "\n";
+    std::cout <<tot << "\n";
+    std::cout << percentuale << "%" << "\n";
+}
+
 void Tower::start() {
     if (!this->channel->isUp()) {
         loge("Can't start tower without a connected channel!");
@@ -306,6 +335,7 @@ void Tower::start() {
     // threads.emplace_back(&Tower::areaUpdateLoop, this);
     threads.emplace_back(&Tower::drawGrid, this);
     logi("Tower online");
+    this -> startTime = Time::nanos();
     while (this->running) {
         // 1' of waiting before restarting the cycle
         Message *message = this->channel->awaitMessage(10);
@@ -328,6 +358,7 @@ void Tower::start() {
             }
         }
     }
+
     logi("Powering Off");
     // Disconnect Drones
     std::vector<Drone> drones = this->getDrones();
@@ -353,6 +384,9 @@ void Tower::start() {
         logw("Can't flush redis channel");
     }
     logi("Printing Area");
+    
+    statistics();
+    
     std::ofstream areaFile;
     areaFile.open("area.csv", std::ios_base::app);
     for(int i = 0; i < this->areaWidth; i++) {
@@ -362,6 +396,8 @@ void Tower::start() {
         areaFile << "\n";
     }
     areaFile.close();
+
+    
     logi("Area Saved on area.scv");
 }
 
