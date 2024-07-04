@@ -155,6 +155,10 @@ class Tower {
          * This function gets an unassigned block with a max value inside it, and associate it to a drone.
          */
         void associateBlock(Drone drone);
+        /**
+         * @brief Calculate statistics for simulation purpose.
+        */
+        void calculateStatistics();
         // Params
         static bool running;            ///< Checks if a tower is online. Is static for hanglind system signals.
         Channel* channel;               ///< The redis channel used for comunications.
@@ -166,6 +170,8 @@ class Tower {
         int y;                          ///< The y location on the area of the tower.
         int areaWidth;                  ///< The area width.
         int areaHeight;                 ///< The area height.
+        int startTime;                  ///< The start time of simulation.
+        std::vector<unsigned long long> avgs;        ///< Simulation Purpose: Al avgg calculated.
 };
 
 #endif  // TOWER_HPP

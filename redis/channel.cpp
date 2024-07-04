@@ -507,7 +507,7 @@ bool Channel::flush() {
     if (!this->isUp()) {
         return false;
     }
-    RedisResponse *response = this->sendReadCommand("FLUSH ALL");
+    RedisResponse *response = this->sendReadCommand("FLUSHALL");
     if (response->hasError()) {
         if (response->getType() == NONE) {
             logChannelWarning("Timeout on flushing");

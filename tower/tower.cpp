@@ -242,6 +242,9 @@ void Tower::checkDrones() {
 void Tower::droneCheckLoop() {
     while (this->running) {
         std::this_thread::sleep_for(std::chrono::seconds(60));
+        if (!this->running) {
+            break;
+        }
         logi("Checking Drones");
         this->checkDrones();
     }
@@ -257,41 +260,20 @@ void Tower::drawGrid() {
 }
 
 void Tower::areaUpdateLoop() {
-    long long start = Time::nanos();
     // Not Thread Safe -> does not create problems
     while (this->running) {
-        // Arbitrary 10 seconds for growing up areas
-        std::this_thread::sleep_for(std::chrono::seconds(5));
-        for (int i = 0; i < this->areaWidth; i++) {
-            for (int j = 0; j < this->areaHeight; j++) {
-                this->area->operator[](i)[j] = this->area->operator[](i)[j] + 1;
-            }
+        // Arbitrary 60 seconds for showing stats
+        std::this_thread::sleep_for(std::chrono::seconds(60));
+        if (!this->running) {
+            break;
         }
+        this->calculateStatistics();
     }
-    long long end = Time::nanos();
-    // Calculate Area Media Value
-    float values = 0;
-    float min = 500;
-    float max = 0;
-    for (int i = 0; i < this->areaWidth; i++) {
-        for (int j = 0; j < this->areaHeight; j++) {
-            int v = this->area->operator[](i)[j];
-            values += v;
-            if (v < min) {
-                min = v;
-            }
-            if (v > max) {
-                max = v;
-            }
-        }
-    }
-    float avg = values / (float)(this->areaWidth * this->areaHeight);
-    float sec = (end - start) / 1e9;
-    logi("Average values: " + std::to_string(avg) + " in " + std::to_string(sec) + "s");
-    logi("Max: " + std::to_string(max) + ", Min" + std::to_string(min));
+    this->calculateStatistics();
+    // TODO: Calculate True average.
 }
 
-void Tower::statistics(){
+void Tower::calculateStatistics() {
     unsigned long long media = 0;
     long long max = LLONG_MIN;
     long long min = LLONG_MAX;
@@ -302,7 +284,11 @@ void Tower::statistics(){
             long long value = this->area->operator[](i)[j];
             if (value != 0){
                 visited += 1;
-            }else{
+            } else {
+                float elapsed = (Time::nanos() - this->startTime) / 1e9;
+                if (elapsed > 60 * 5) {
+                    loge("Cell (" + std::to_string(i) + "," + std::to_string(i) + ") is not being visited!");
+                }
                 value = this->startTime;
             }  
             media += value;
@@ -315,12 +301,13 @@ void Tower::statistics(){
         }
     }
     float percentuale =  (static_cast<float>(visited) / tot) * 100;
-    std::cout <<visited  << "\n";
-    std::cout <<tot << "\n";
-    std::cout << percentuale << "%" << "\n";
+    media = media / visited;
+    this->avgs.emplace_back(media);
+    logi("Stats: {visited:" + std::to_string(percentuale) + "%, max:" + std::to_string(max) + ", min:" + std::to_string(min) + ", avg:" + std::to_string(media) + "}");
 }
 
 void Tower::start() {
+    long long start = Time::nanos();
     if (!this->channel->isUp()) {
         loge("Can't start tower without a connected channel!");
         return;
@@ -332,7 +319,7 @@ void Tower::start() {
     this->running = true;
     std::vector<std::thread> threads;
     threads.emplace_back(&Tower::droneCheckLoop, this);
-    // threads.emplace_back(&Tower::areaUpdateLoop, this);
+    threads.emplace_back(&Tower::areaUpdateLoop, this);
     threads.emplace_back(&Tower::drawGrid, this);
     logi("Tower online");
     this -> startTime = Time::nanos();
@@ -343,7 +330,6 @@ void Tower::start() {
             // If we have no message to handle, we check last updates from drones
             // If a last update is > x second (to decide, maybe 1-5' => 60-300'') -> ping and wait a response
             // If the drone is doing nothing, we commit it to monitor a zone
-
         } else {
             // Handle message received on another thread, and return to listen
             logi("Received message from Drone " + std::to_string(message->getChannelId()) + ". Type: " + std::to_string(message->getType()));
@@ -383,10 +369,16 @@ void Tower::start() {
     } else {
         logw("Can't flush redis channel");
     }
-    logi("Printing Area");
-    
-    statistics();
-    
+    long long end = Time::nanos();
+    float sec = (end - start) / 1e9;
+    logi("Duration of the Simulation: " + std::to_string(sec));
+    unsigned long long total = 0;
+    for (unsigned long long avg : this->avgs) {
+        total += avg;
+    }
+    total = total / this->avgs.size();
+    logi("System Total Average: " + std::to_string(total));
+    /*logi("Printing Area");
     std::ofstream areaFile;
     areaFile.open("area.csv", std::ios_base::app);
     for(int i = 0; i < this->areaWidth; i++) {
@@ -396,9 +388,7 @@ void Tower::start() {
         areaFile << "\n";
     }
     areaFile.close();
-
-    
-    logi("Area Saved on area.scv");
+    logi("Area Saved on area.scv");*/
 }
 
 long long checkDroneId(Postgre* db, long long id) {

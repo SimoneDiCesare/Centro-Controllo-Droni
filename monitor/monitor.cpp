@@ -4,12 +4,14 @@
 #include <vector>
 
 int main(int argc, char* argv[]) {
-
-    std::string fileName = std::string(argv[1]) + " " + std::string(argv[2]) + " " + std::string(argv[3]);
-
-    //std::cout << "Inserire file .log: ";
-    //std::getline(std::cin, fileName); 
-    //std::cout << "\n";
+    std::string fileName;
+    if (argc >= 2) {
+        fileName = std::string(argv[1]);
+    } else {
+        std::cout << "Inserire file di log:\n";
+        std::getline(std::cin, fileName);
+        std::cout << "\n";
+    }
     std::ifstream fileLog(fileName);
 
     if (!fileLog.is_open()) {

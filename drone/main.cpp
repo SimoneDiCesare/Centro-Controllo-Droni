@@ -8,7 +8,8 @@
 
 int main(int argc, char* argv[]){
     logVerbose(false);
-    logOpen("drone - " + std::to_string(Time::nanos()) + ".log");
+    // logOpen("drone - " + std::to_string(Time::nanos()) + ".log");
+    logOpen("drone.log");
     float executionSpeed = 1;
     if (argc < 2) {
         logInfo("Init", "Using Default Execution Speed: 1");
