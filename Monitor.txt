@@ -1,0 +1,24 @@
+drone/drone.cpp:
+109,116 -> check per il canale di comunicazione
+124,166 -> check connessione alla torre (fase inizializzazione)
+210 -> check batteria a 0 ==> drone morto
+415 -> check sul tipo di messaggio
+drone/main.cpp:
+25 -> check sulla connesione al canale di comunicazione
+redis/redis.cpp:
+109 -> check sul tipo di risposta del protocollo redis
+tower/main.cpp:
+31 -> check sulla connessione al db postgre
+38 -> check sulla connessione al canale di comunicazione
+tower/tower.cpp:
+73,312 -> check sulla connessione al canale di comunicazione
+85 -> check sulla query di drop dei Trigger
+86,133,168,405,415,427,491,572,586,608 -> check sulle query del db
+155,161 -> check sulle query di inizializzazione della tabella drone
+180,396 -> check sulla connessione al db
+290 -> check sulla visita delle celle
+400 -> check di validità id drone
+515 -> check sulla validità dello stato di un drone
+565 -> check sulla posizione del drone
+646 -> check sul tipo di messaggio
+655 -> check sulla rimozione di un messaggio dalla coda
