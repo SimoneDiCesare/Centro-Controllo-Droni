@@ -525,6 +525,7 @@ INPUT /usr/local/texlive/2024/texmf-dist/tex/latex/lm/ot1lmtt.fd
 INPUT /usr/local/texlive/2024/texmf-dist/tex/latex/lm/ot1lmtt.fd
 INPUT /usr/local/texlive/2024/texmf-dist/tex/latex/lm/ot1lmtt.fd
 INPUT /usr/local/texlive/2024/texmf-dist/fonts/tfm/public/lm/rm-lmtt10.tfm
+INPUT /usr/local/texlive/2024/texmf-dist/fonts/enc/dvips/lm/lm-rmtt.enc
 INPUT /usr/local/texlive/2024/texmf-dist/tex/latex/listings/lstlang1.sty
 INPUT /usr/local/texlive/2024/texmf-dist/tex/latex/listings/lstlang1.sty
 INPUT /usr/local/texlive/2024/texmf-dist/tex/latex/listings/lstlang1.sty
@@ -537,7 +538,6 @@ INPUT /usr/local/texlive/2024/texmf-dist/tex/latex/listings/lstmisc.sty
 INPUT /usr/local/texlive/2024/texmf-dist/fonts/tfm/public/lm/rm-lmtt9.tfm
 INPUT /usr/local/texlive/2024/texmf-dist/fonts/tfm/public/lm/rm-lmr9.tfm
 INPUT /usr/local/texlive/2024/texmf-dist/fonts/tfm/public/lm/rm-lmtti10.tfm
-INPUT /usr/local/texlive/2024/texmf-dist/fonts/enc/dvips/lm/lm-rmtt.enc
 INPUT /usr/local/texlive/2024/texmf-dist/fonts/tfm/public/lm/rm-lmr7.tfm
 INPUT /usr/local/texlive/2024/texmf-dist/fonts/tfm/public/lm/rm-lmr5.tfm
 INPUT /usr/local/texlive/2024/texmf-dist/fonts/tfm/public/lm/lmmi10.tfm
@@ -574,9 +574,14 @@ INPUT ./image/rechargingUML_MSC.png
 INPUT ./image/rechargingUML_MSC.png
 INPUT ./image/rechargingUML_MSC.png
 INPUT /usr/local/texlive/2024/texmf-dist/fonts/tfm/public/lm/rm-lmtt10.tfm
+INPUT /usr/local/texlive/2024/texmf-dist/tex/latex/lm/ts1lmtt.fd
+INPUT /usr/local/texlive/2024/texmf-dist/tex/latex/lm/ts1lmtt.fd
+INPUT /usr/local/texlive/2024/texmf-dist/tex/latex/lm/ts1lmtt.fd
+INPUT /usr/local/texlive/2024/texmf-dist/fonts/tfm/public/lm/ts1-lmtt10.tfm
 INPUT relazione.aux
 INPUT ./relazione.out
 INPUT ./relazione.out
+INPUT /usr/local/texlive/2024/texmf-dist/fonts/type1/public/amsfonts/latxfont/lcircle1.pfb
 INPUT /usr/local/texlive/2024/texmf-dist/fonts/type1/public/lm/lmbx10.pfb
 INPUT /usr/local/texlive/2024/texmf-dist/fonts/type1/public/lm/lmbx12.pfb
 INPUT /usr/local/texlive/2024/texmf-dist/fonts/type1/public/lm/lmmi10.pfb

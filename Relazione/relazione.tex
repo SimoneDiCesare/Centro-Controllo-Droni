@@ -33,6 +33,37 @@
 \definecolor{identifier}{rgb}{0.2, 0.2, 1}
 \definecolor{background}{rgb}{0.99, 0.99, 0.99}
 
+\lstdefinelanguage{SQL}{
+    morekeywords={
+        SELECT, INSERT, UPDATE, DELETE, FROM, WHERE, AND, OR, NOT, IN, AS, JOIN,
+        ON, CREATE, DROP, TABLE, DATABASE, ALTER, ADD, CONSTRAINT, PRIMARY, KEY,
+        FOREIGN, IF, NULL, DEFAULT, AUTO_INCREMENT, INDEX, VALUES, INTO, THEN
+    },
+    sensitive=false,
+    morecomment=[l]{--},
+    morecomment=[s]{/*}{*/},
+    morestring=[b]',
+    morestring=[b]"
+}
+
+
+\lstset{
+    basicstyle=\ttfamily,
+    keywordstyle=\color{keyword},
+    commentstyle=\color{green},
+    stringstyle=\color{string},
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    stepnumber=1,
+    numbersep=10pt,
+    backgroundcolor=\color{white},
+    showspaces=false,
+    showstringspaces=false,
+    breaklines=true,
+    frame=single,
+    frameround=tttt
+}
+
 \lstdefinestyle{customcpp}{
     language=C++,
     basicstyle=\ttfamily\footnotesize,
@@ -256,7 +287,7 @@ Dato che un punto si considera visitato se si trova nel raggio di 10 metri da un
     \includegraphics[height = 5 cm]{image/areedroni.png}
     \caption{L'area divisa in caselle della dimensione del quadrato inscritto nel cerchio di raggio 10}
 \end{figure}
-\paragraph*{Divisione delle celle}
+\paragraph*{Divisione dei blocchi}
 Abbiamo scelto di raggruppare le caselle in blocchi circa della stessa area (la discretizzazione non garantisce la perfetta divisibilità) per garantire equità nelle assegnazioni. 
 Data la variabilità delle dimensioni dell'area e del numero di droni in fase iniziale, non è sempre garantito che il numero di droni divida il numero caselle in un valore utile per costruire una matrice di blocchi.
 Cerchiamo quindi due valori $h$ e $w$ tali che : $h * w > numero\ di\ droni$ e dividiamo l'area in $h\times w$ blocchi.
@@ -267,9 +298,9 @@ Anche se creare più blocchi ne riduce le dimensioni, questo non influisce sulle
 Sebbene l'algoritmo sia stato ideato per massimizzare il tempo di visita in un ciclo di carica della flotta di droni, questo non tiene conto del fatto che ogni drone può lunghi tempi di ricarica che possono superare anche di varie volte il tempo di volo di ogni drone.
 Per sopperire a questo rallentamento è molto efficacie considerare la divisione in blocchi dell'area come se si avesse a disposizione solo un' $n$-esima parte dei droni.\\
 Indichiamo con $n$ il numero di droni necessari per coprire il tempo di ricarica medio di un drone più uno (il tempo, medio, di volo del drone stesso). 
-In questo modo si distribuisce il numero di droni in volo durante il monitoraggio a beneficio sia del tempo di visita medio che massimo.
-
+In questo modo si distribuisce il numero di droni in volo durante il monitoraggio a beneficio sia del tempo di visita medio che massimo.\\
 Le differenze tra i vari approcci sono mostrate nella sezione risultati sperimentali.
+
 \paragraph*{Assegnamento dei blocchi}
 Per minimizzare il tempo di visita massimo e medio abbiamo sperimentato due criteri di scelta:
 \begin{enumerate}
@@ -277,11 +308,8 @@ Per minimizzare il tempo di visita massimo e medio abbiamo sperimentato due crit
     
     \item \textbf{FirstMaxTime}: Assegnare ad un drone \textit{free} il blocco che contiene la casella visitata meno di recente.
 \end{enumerate}
-Attualmente il programma utilizza il secondo approccio (\textbf{FirstMaxTime}). Se valutiamo il criterio di assegnamento basandoci su tempo di visita medio e tempo di visita massimo raggiunto durante una simulazione, 
-possiamo osservare che a parità di area e di droni il FirstAverageTime ottiene un tempo di visita medio leggermente più basso di quello del FirstMaxTime ma un tempo massimo più alto in quanto tende a non riassegnare dei blocchi (magari quelli più ai margini) che hanno pochi punti con un tempo di visita molto alto ma molti con tempo di visita molto basso.
-Al contrario il FirstMaxTime al costo di aumentare leggermente il tempo medio di visita, riesce a diminuire sensibilmente il tempo di visita massimo dimostrandosi più equo.  
-
-
+Attualmente il programma utilizza il secondo approccio (\verb|FirstMaxTime|). Computazionalmente i due approcci sono equivalenti e dai test anche a livello di efficacia non si nota una differenza significativa 
+tranne che su aree grandi con pochi droni, dove è preferibile dare più importanza al valore massimo per essere sicuri di visitare almeno una volta tutti i punti.
 \section{Protocollo di comunicazione}
 La Torre di Controllo ed i Droni comunicano in maniera asincrona. Le comunicazioni avvengono tramite Redis.
 \subsection{Scambio di messaggi}
@@ -568,6 +596,55 @@ La tabella block ha senso esclusivamente nel contesto dell'algoritmo di guida de
 
 \newpage
 \section{Implementazione}
+\subsection{Monitor}
+seguono i monitor che assicurano che i vincoli funzionali e non-funzionali vengano rispettati
+\paragraph*{locationTrigger}
+Questo trigger opera sul database e assicura che ogni drone rimanga nei limiti dell'area da monitorare 
+\begin{lstlisting}[language=SQL, caption={locationTrigger}]
+CREATE OR REPLACE FUNCTION check_drone_area()
+RETURNS TRIGGER AS $$
+DECLARE
+    min_x INT := 0;
+    min_y INT := 0;
+    max_x INT := [this->areaWidth] 
+    max_y INT := [this->areaHeight]
+BEGIN
+    IF NEW.x < min_x OR NEW.x > max_x OR NEW.y < min_y OR NEW.y > max_y THEN
+        RAISE EXCEPTION 'Drone % is out of surveillance area',
+        NEW.id;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+CREATE TRIGGER drone_location_check
+BEFORE INSERT OR UPDATE ON drone
+FOR EACH ROW
+EXECUTE FUNCTION check_drone_area();
+        
+
+\end{lstlisting}
+\paragraph*{batteryTrigger}
+Questo trigger opera sul database e si assicura che non esistano droni che volano con la batteria scarica
+    \begin{lstlisting}[language=SQL, caption={batteryTrigger}]
+CREATE OR REPLACE FUNCTION check_drone_battery()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.dstate != CHARGING AND NEW.dstate != DEAD AND NEW.battery_autonomy <= 0 THEN
+        'Drone % has no battery left but is still flying'
+        RAISE EXCEPTION, 
+        NEW.id;
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+CREATE TRIGGER drone_battery_check
+AFTER UPDATE ON drone
+FOR EACH ROW
+EXECUTE FUNCTION check_drone_battery();
+ 
+\end{lstlisting}
+\newpage
+\subsection{Altre parti interessanti}
 Di seguito vengono riportate parti del codice implementato 
 \begin{lstlisting}[style=customcpp, caption={da drone.cpp}]
     void Drone::start(float executionSpeed) {

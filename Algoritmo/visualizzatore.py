@@ -8,8 +8,8 @@ def visualizza(matrice):
     plt.draw()
     plt.pause(0.03)  # Aggiorna il grafico per 0.1 secondi per mostrare le modifiche
 
-def salva(matrice):
-    plt.imsave('matricePene.png', matrice, cmap='jet')
+def salva(matrice,filename):
+    plt.imsave(filename, matrice, cmap='jet')
 
 
 # Esempio di utilizzo

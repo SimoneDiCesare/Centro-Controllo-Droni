@@ -244,7 +244,7 @@ def controlD(mat):
     if block == []:
         return "troppi droni per la dimensione dell'area"
     print(f"Area: {LATO} km^2 / {dim}x{dim} matrix\ndroni totali: {Ndrones}, \n\taverage_charge: {average_charge}, average_time_of_fly: {average_time_of_fly}, n_sets:{n_sets} \nnumero di blocchi: {len(block)}")
-    for iteration in tqdm(range(t_iter),desc="peni"):
+    for iteration in tqdm(range(t_iter),desc="iterazioni"):
        
         for r in [dro for dro in drones if dro.state == "Ready"]:
             assignment[r] = assegnaMax(block, assignment,mat)
@@ -326,10 +326,10 @@ def controlD(mat):
         dati[2,iteration] = in_volo
         #print(f"it: {iteration}, avg: {avg}, max: {maxx}, in volo: {in_volo}")
     
-    aver = np.mean(dati[0])
-    last_Max = np.max(dati[1])
+    aver = np.mean(dati[0])*1.7
+    last_Max = np.max(dati[1])*1.7
     print(f"avg: {int(aver//3600)}h, {int((aver%3600)//60)}m, {int(aver%60)}s , max: {int(last_Max//3600)}h, {int((last_Max%3600)//60)}m, {int(last_Max%60)}s, in volo:{np.mean(dati[2])}")
-    vis.salva(mat)
+    vis.salva(mat,f"salvataggi/{Ndrones}_{LATO}_{tempo_simulato}.png")
 
 
 if __name__ == "__main__":
@@ -341,13 +341,20 @@ if __name__ == "__main__":
     #ogni STEP indica un'iterazione del codice
     #in questa iterazione il drone si muove di STEP
     #ogni STEP indica 3.4 secondi. 
-    DIM_CASELLA = 14.142135624 
-    LATO = 6000
-    dim = int((LATO+DIM_CASELLA-0.000000001)/DIM_CASELLA) #per problema originale dim = 300
+    
+    Ndrones = 1000
+    LATO = 6000 # in metri
+    tempo_simulato = 10 # in ore 
+
+
+    t_iter = int(np.ceil(tempo_simulato*3600/1.7)) # numero di iterazioni
+    
+    DIM_CASELLA = 14.142135624
+    
+    dim = int(np.ceil(LATO/DIM_CASELLA)) #per problema originale dim = 300
     common_time = 1061 #per problema originale dim = 1061
-    Ndrones = 100
     origin = (int((dim-1)/2),int((dim-1)/2)) #presumendo che l'area sia QUADRATA
-    t_iter = 20000
+    
 #-----------
     mat = np.full((dim, dim), 1)
     prova = np.array([
@@ -358,8 +365,8 @@ if __name__ == "__main__":
         [1,2,3,4,5],
     ])
     #print(sum(prova[0]))
-    controlD(mat)
-   
+    #controlD(mat)
+    
     # blks_idx = create_blocks_2(dim, Ndrones)
     # blks = [blk.Block((b[0],b[1]),(b[2], b[3]),origin) for b in blks_idx]
     # # print(blks)
@@ -373,4 +380,4 @@ if __name__ == "__main__":
     a = [blk.Block((0,0),(1,1)), blk.Block((1,1),(2,2)), blk.Block((1,0),(2,1))]
     dic = dict(zip(b, a))
     print(dic[b[0]].start)"""
-    
+    print(np.mean(np.random.rand(10000, 10000)))
