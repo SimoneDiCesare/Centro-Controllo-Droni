@@ -12,13 +12,12 @@
 
 // ./bin/tower_exe DRONE_NUMBER
 int main(int argc, char* argv[]) {
-    std::string logFile = "tower - " + std::to_string(Time::nanos()) + ".log";
-    if (argc >= 5) {
-        logFile = argv[4];
-    }
+    // std::string logFile = "tower - " + std::to_string(Time::nanos()) + ".log";
+    std::string logFile = "tower.log";
     logVerbose(true);
     logOpen(logFile);
-    int droneCount = (argc >= 2)? std::stoi(argv[1]) : 100;
+    // We divide by 7 for efficency reasons
+    int droneCount = (argc >= 2)? std::stoi(argv[1]) / 7 : 100 / 7;
     // 6km -> 6000m -> 6000/GRID_FACTOR = Cell_Count
     int areaWidth = 6000 / GRID_FACTOR;
     int areaHeight = 6000 / GRID_FACTOR;

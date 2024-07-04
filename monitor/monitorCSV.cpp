@@ -18,7 +18,7 @@ std::vector<std::string> split(const std::string &str, char delimiter) {
     return tokens;
 }
 
-int main(int argc, char* argv[]) {
+int main_test(int argc, char* argv[]) {
 
     std::string filename = "../area.csv";
     

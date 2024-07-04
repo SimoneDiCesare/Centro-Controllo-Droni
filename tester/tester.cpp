@@ -8,7 +8,7 @@
 #include "log.hpp"
 namespace fs = std::filesystem;
 
-#define MAX_DRONES 1000
+#define MAX_DRONES 100
 
 
 int NUMS_DRONES = MAX_DRONES;
@@ -32,9 +32,10 @@ void createThreadsInProcess() {
     // Ciclo per creare NUM_THREADS thread
     for (long i = 0; i < NUMS_DRONES; ++i) {
         // Creazione del thread
-        if (pthread_create(&threads[i], nullptr, threadFunction, (void*)i) != 0) {
-            logError("Tester", "Errore nella creazione del thread " + std::to_string(i));
-            exit(1); // Esce dal programma in caso di errore nella creazione del thread
+        int code = pthread_create(&threads[i], nullptr, threadFunction, (void*)i);
+        if (code != 0) {
+            logError("Tester", "Errore nella creazione del thread " + std::to_string(i) + ": " + std::to_string(code));
+            // exit(1); // Esce dal programma in caso di errore nella creazione del thread
         }
     }
     // Ciclo per attendere la terminazione di tutti i thread
@@ -65,7 +66,7 @@ void checkLogs() {
                     // Costruisci il comando completo includendo il parametro
                     std::string executable = "./bin/monitor_exe";
                     std::string parameter = entry.path().filename().string(); // Passa il percorso completo del file
-                    std::string command = executable + " " + parameter;
+                    std::string command = executable + " \"" + parameter + "\"";
                     // Esegui il comando
                     int exit_code = std::system(command.c_str());
                     // Verifica il codice di uscita del comando
@@ -91,25 +92,22 @@ int main(int argc, char* argv[]) {
     if (argc >= 3) {
         executionTime = std::stoi(argv[2]);
     }
-    if (argc >= 4 && (strcmp(argv[3], "y") == 0 || strcmp(argv[3], "yes") == 0)){
-        std::random_device rd;
-        std::mt19937 gen(rd());
-        std::uniform_int_distribution<> dis(1, MAX_DRONES);
-        int randomNumber = dis(gen);
-        NUMS_DRONES = randomNumber;
+    if (argc >= 4) {
+        NUMS_DRONES = std::stoi(argv[3]);
     }
 
     pid_t tpid = fork();
     if (tpid < 0) {
         logError("Tester", "Errore nella creazione del processo TORRE");
-        return -1;
+        exit(-1);
     } else if (tpid == 0) {
         // Child -> run tower
-        const char *argv[] = {"./bin/tower_exe",  std::to_string(NUMS_DRONES).c_str()};
+        const char *argv[] = {"./bin/tower_exe",  std::to_string(NUMS_DRONES).c_str(), NULL};
         // Sostituisce il processo figlio con tower_exe
-        if (execvp(argv[0], (char *const *)argv) == -1) {
-            logError("Tester", "Errore nell'esecuzione di execvp");
-            return -1;
+        int code = execvp(argv[0], (char *const *)argv);
+        if (code == -1) {
+            logError("Tester", "Errore nell'esecuzione di execvp: " + std::string(strerror(errno)));
+            exit(-1);
         }
     } else {
         // Father -> spawn drones
@@ -119,7 +117,7 @@ int main(int argc, char* argv[]) {
             // Can't spawn drones -> interrupt tower
             logError("Tester", "Errore nella creazione del processo DRONI");
             kill(tpid, SIGINT);
-            return -1;
+            exit(-1);
         } else if (dpid == 0) {
             // Child -> spawn drones
             createThreadsInProcess();
