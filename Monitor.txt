@@ -3,13 +3,16 @@ drone/drone.cpp:
 124,166 -> check connessione alla torre (fase inizializzazione)
 210 -> check batteria a 0 ==> drone morto
 415 -> check sul tipo di messaggio
+
 drone/main.cpp:
 25 -> check sulla connesione al canale di comunicazione
 redis/redis.cpp:
 109 -> check sul tipo di risposta del protocollo redis
+
 tower/main.cpp:
 31 -> check sulla connessione al db postgre
 38 -> check sulla connessione al canale di comunicazione
+
 tower/tower.cpp:
 73,312 -> check sulla connessione al canale di comunicazione
 85 -> check sulla query di drop dei Trigger

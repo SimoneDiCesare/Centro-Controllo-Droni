@@ -5,7 +5,7 @@ import drone as dr
 import block as blk
 import matTools as mt
 from tqdm import tqdm
-
+import csv 
 #funzioni NECESSARIE per solo per la funzione della torre di controllo
 def updateTime(matrice):
     h = len(matrice)
@@ -67,8 +67,11 @@ def biBlock(start_dim, nblock):
     return create_blocks(start_dim, pow_of_two)
 
 def approxBlock(nDrones):
-    h= int(np.sqrt(nDrones))
-    w = h
+   
+    h= int(np.ceil(np.sqrt(nDrones)))
+    if h == 0 : h = 1
+    w = h 
+    
     while w * h < nDrones:
         if (w+1)*h <= nDrones: w += 1
         else:h += 1
@@ -232,6 +235,8 @@ def controlD(mat):
     average_charge = np.mean(np.array([d.chargetime for d in drones]))
     average_time_of_fly = np.mean(np.array([d.time_of_fly for d in drones]))
     n_sets = int((average_charge + average_time_of_fly-1)/average_time_of_fly +1)
+    batteria = Ndrones//n_sets
+    if batteria == 0: batteria = 1
     blocksIndex = create_blocks_2(dim, Ndrones//n_sets)
     block = [blk.Block((b[0],b[1]),(b[2], b[3]),origin) for b in blocksIndex]
     recharge = [1061*4 for d in drones]
@@ -330,7 +335,7 @@ def controlD(mat):
     last_Max = np.max(dati[1])*1.7
     print(f"avg: {int(aver//3600)}h, {int((aver%3600)//60)}m, {int(aver%60)}s , max: {int(last_Max//3600)}h, {int((last_Max%3600)//60)}m, {int(last_Max%60)}s, in volo:{np.mean(dati[2])}")
     vis.salva(mat,f"salvataggi/{Ndrones}_{LATO}_{tempo_simulato}.png")
-
+    return [aver/60, last_Max/60]
 
 if __name__ == "__main__":
     #-----------
@@ -342,21 +347,20 @@ if __name__ == "__main__":
     #in questa iterazione il drone si muove di STEP
     #ogni STEP indica 3.4 secondi. 
     
-    Ndrones = 1000
+    Ndrones = 500
     LATO = 6000 # in metri
-    tempo_simulato = 10 # in ore 
+    tempo_simulato = 12 # in ore 
 
 
-    t_iter = int(np.ceil(tempo_simulato*3600/1.7)) # numero di iterazioni
+
+    DIM_CASELLA = 10*np.sqrt(2)
+    t_iter = int(np.ceil(tempo_simulato*3600/1.7)) # numero di iterazioni    
     
-    DIM_CASELLA = 14.142135624
     
-    dim = int(np.ceil(LATO/DIM_CASELLA)) #per problema originale dim = 300
     common_time = 1061 #per problema originale dim = 1061
-    origin = (int((dim-1)/2),int((dim-1)/2)) #presumendo che l'area sia QUADRATA
     
 #-----------
-    mat = np.full((dim, dim), 1)
+    
     prova = np.array([
         [1,2,3,4,5],
         [1,2,3,4,5],
@@ -365,7 +369,19 @@ if __name__ == "__main__":
         [1,2,3,4,5],
     ])
     #print(sum(prova[0]))
-    #controlD(mat)
+    res = []
+    aree = [1000, 3000, 6000]
+    numero_di_droni = [1,4,16,64, 256, 400, 600, 1000, 2000]
+    for a in aree:
+        for nud in numero_di_droni:
+            print(a, nud)
+            Ndrones = nud
+            LATO = a
+            dim = int(np.ceil(LATO/DIM_CASELLA))
+            origin = (int((dim-1)/2),int((dim-1)/2)) #presumendo che l'area sia QUADRATA
+            mat = np.full((dim, dim), 1)
+            res.append([a,nud]+controlD(mat))
+    np.savetxt('matrix.csv', np.array(res), delimiter=',', fmt='%d')
     
     # blks_idx = create_blocks_2(dim, Ndrones)
     # blks = [blk.Block((b[0],b[1]),(b[2], b[3]),origin) for b in blks_idx]
@@ -380,4 +396,4 @@ if __name__ == "__main__":
     a = [blk.Block((0,0),(1,1)), blk.Block((1,1),(2,2)), blk.Block((1,0),(2,1))]
     dic = dict(zip(b, a))
     print(dic[b[0]].start)"""
-    print(np.mean(np.random.rand(10000, 10000)))
+    

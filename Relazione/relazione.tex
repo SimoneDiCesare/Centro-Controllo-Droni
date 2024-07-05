@@ -25,6 +25,10 @@
 \usepackage{multicol}
 \usepackage{listings}
 \usepackage{longtable}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}  % Imposta la compatibilità con l'ultima versione di pgfplots
+
+
 \setlist{nolistsep} % Rimuove lo spazio extra tra gli elementi della lista
 
 \definecolor{comment}{rgb}{0.5, 0.5, 0.5}
@@ -644,6 +648,94 @@ EXECUTE FUNCTION check_drone_battery();
  
 \end{lstlisting}
 \newpage
+\paragraph*{position monitor} Il seguente metodo presenta l'\verb|handleLocationMessage| che gestisce la ricezione di un messaggio di posizione della torre da parte di un drone.
+Il metodo presenta al suo interno due monitor importanti che importanti che riconoscono sia errori di lettura di una posizione non valida, sia errori provenienti dalla lettura del database.
+\\
+\begin{lstlisting}[style=customcpp, caption={da drone.cpp}]
+void Tower::handleLocationMessage(LocationMessage *message) {
+    long long droneId = message->getChannelId();
+    Drone drone = this->getDrone(droneId);
+    drone.posX = message->getX();
+    drone.posY = message->getY();
+    if (drone.posX < 0 || drone.posX > this->areaWidth || drone.posY < 0 || drone.posY > this->areaHeight) {
+        loge("Drone " + std::to_string(droneId) + " out of bounds! (" + std::to_string(drone.posX) + "," + std::to_string(drone.posY) + ")");
+    } else {
+        this->area->operator[](drone.posX)[drone.posY] = Time::nanos();
+    }
+    logi("Drone " + std::to_string(droneId) + " arrived at: " + std::to_string(drone.posX) + "," + std::to_string(drone.posY));
+    PostgreResult result = this->db->execute("UPDATE drone SET x = " + std::to_string(drone.posX) + ", y = " + std::to_string(drone.posY) + ", last_update = " + CURRENT_TIMESTAMP + " WHERE id = " + std::to_string(droneId));
+    if (result.error) {
+        logError("DB", result.errorMessage);
+    }
+    // Pick next step
+    this->calcolateDronePath(drone);
+}
+\end{lstlisting}
+\newpage
+\paragraph*{Altri monitor} Segue una lista di riferimenti al codice in cui sono presenti script di riconoscimento di errori e scrittura degli stessi sul log appropriato.\\
+In "drone/drone.cpp":
+\[\begin{array}{|l|l|}
+    \hline
+    riga\ 109,116 & \text{check per il canale di comunicazione}\\
+    \hline
+    riga\ 124,166 & \text{check connessione alla torre (fase inizializzazione)}\\
+    \hline
+    riga\ 210 & \text{check batteria a 0 $\implies$ drone morto}\\
+    \hline
+    riga\ 415 & \text{check sul tipo di messaggio}\\
+    \hline
+\end{array}\]
+
+In "drone/main.cpp":
+\[\begin{array}{|l|l|}
+    \hline
+    riga\ 25 & \text{check sulla connessione al canale di comunicazione}\\
+    \hline
+\end{array}\]
+
+In "redis/redis.cpp":
+\[\begin{array}{|l|l|}
+    \hline
+    riga\ 109& \text{check sul tipo di risposta del protocollo redis}\\
+    \hline
+\end{array}\]
+
+In "tower/main.cpp":
+\[\begin{array}{|l|l|}
+    \hline
+    riga\ 31 &\text{check sulla connessione al db postgre}\\
+    \hline
+    riga\ 38 & \text{check sulla connessione al canale di comunicazione}\\
+\hline
+\end{array}\]
+
+In "tower/tower.cpp":
+\[\begin{array}{|l|l|}
+    \hline
+    riga\ 73,312 & \text{check sulla connessione al canale di comunicazione}\\
+    \hline
+    riga\ 85 & \text{check sulla query di drop dei Trigger}\\
+    \hline
+    riga\ 86,133,168,405,415,427,491,572,586,608 & \text{check sulle query del db}\\
+    \hline
+    riga\ 155,161 & \text{check sulle query di inizializzazione della tabella drone}\\
+    \hline
+    riga\ 180,396 & \text{check sulla connessione al db}\\
+    \hline
+    riga\ 290 & \text{check sulla visita delle celle}\\
+    \hline
+    riga\ 400 & \text{check di validità id drone}\\
+    \hline
+    riga\ 515 & \text{check sulla validità dello stato di un drone}\\
+    \hline
+    riga\ 565 &\text{check sulla posizione del drone}\\
+    \hline
+    riga\ 646 & \text{check sul tipo di messaggio}\\
+    \hline
+    riga\ 655 & \text{check sulla rimozione di un messaggio dalla coda}\\
+    \hline
+\end{array}\]
+\newpage
 \subsection{Altre parti interessanti}
 Di seguito vengono riportate parti del codice implementato 
 \begin{lstlisting}[style=customcpp, caption={da drone.cpp}]
@@ -858,6 +950,105 @@ La funzione che la torre di controllo utilizza per decidere la prossima posizion
         this->associateBlock(drone);
     }
 \end{lstlisting}
+\section{Risultati Sperimentali}
+\paragraph*{Premessa:} Pur essendo il progetto proposto già di per sé simulativo, ma strettamente legato al concetto di tempo, per mostrarne i risultati sarebbero necessari dei reali test su lunghi periodi di tempo sfruttando l'appropriato hardware (torre e droni).
+Per risolvere questo ostacolo è stato implementato in python uno script che esegue esattamente le stesse azioni dell'algoritmo alla base del sistema principale, simulando a livello più alto il comportamento dei droni e della torre di controllo.
+
+Lo script risulta quindi essere una rappresentazione del concetto e delle idee che ci sono alla base della realizzazione del protocollo di guida dei droni e la sua esecuzione può mostrare un "time lapse" di quello che accadrebbe se si facesse avviare il programma con i dati parametri, fornendo alla fine un resoconto sul comportamento del programma e sulle prestazioni dello stesso.
+In particolare lo script riporta il tempo di visita medio e massimo dell'area oltre che salvare un'immagine dell'area evidenziando le zone viste più di recente (colori freddi) e meno di recente (colori caldi) su valori normalizzati.
+
+Per tanto seppure il programma emula il comportamento della torre, tali risultati sono da considerarsi "valori attesi" in quanto nella simulazione non vengono considerati aspetti come le latenze tra l'invio di un messaggio e la ricezione della risposta.
+
+\begin{figure}
+    \centering
+    \begin{tikzpicture}
+        \begin{axis}[
+            title={Risultato con area di un $1Km^2$},
+            xlabel={Numero di droni},
+            ylabel={Minuti},
+            grid=major,
+            width=\textwidth,
+            height=0.5\textwidth,
+            legend style={at={(0.5,-0.15)},anchor=north,legend columns=-1}
+        ]
+        \addplot[
+            color=blue,
+            mark=square,
+            ]
+            coordinates {
+                (10,69.25)
+                (20,24.83)
+                (40,12.51)
+                (80,6.05)
+                (160,2.9)
+            };
+        \addlegendentry{tempo di visita medio}
+
+        \addplot[
+            color=red,
+            mark=triangle,
+            ]
+            coordinates {
+                (10,180)
+                (20,54.20)
+                (40,27.65)
+                (80,29)
+                (160,17)
+            };
+        \addlegendentry{tempo di visita massimo}
+        \end{axis}
+    \end{tikzpicture}
+    \caption{Descrizione del grafico.}
+    \label{fig:my_plot}
+\end{figure}
+
+\begin{figure}
+    \centering
+    \begin{tikzpicture}
+        \begin{axis}[
+            title={Risultato con area di un $2Km^2$},
+            xlabel={Numero di droni},
+            ylabel={Minuti},
+            grid=major,
+            width=\textwidth,
+            height=0.5\textwidth,
+            legend style={at={(0.5,-0.15)},anchor=north,legend columns=-1}
+        ]
+        \addplot[
+            color=blue,
+            mark=square,
+            ]
+            coordinates {
+                (50,37.51)
+                (100,18.9)
+                (150,12)
+                (200,9.3)
+                (300,6.52)
+                (400,5)
+            };
+        \addlegendentry{tempo di visita medio}
+
+        \addplot[
+            color=red,
+            mark=triangle,
+            ]
+            coordinates {
+                (50,81)
+                (100,43)
+                (150,55)
+                (200,42)
+                (300,35)
+                (400,28)
+            };
+        \addlegendentry{tempo di visita massimo}
+        \end{axis}
+    \end{tikzpicture}
+    \caption{Descrizione del grafico.}
+    \label{fig:my_plot}
+\end{figure}
+
+
+
 
 \end{document}
 
