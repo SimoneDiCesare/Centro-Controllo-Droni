@@ -1,18 +1,18 @@
 # to do:
 ## nella relazione
-- [ ] Aggiungere monitor 
-- [ ] Aggiungere risultati sperimentali 
-- [ ] modificare parte criterio di assegnamento
+- [x] Aggiungere monitor 
+- [x] Aggiungere risultati sperimentali 
+- [x] modificare parte criterio di assegnamento
 - [x] database
 
 ## Nel simulatore python
 - [x] modificare divisioni blocchi python 
-- [ ] simulazioni test 
+- [x] simulazioni test 
 
 ## Nel resto del progetto
-- [ ] capire se i monitor sono giusti -> Non credo sia na cosa fattibile
+- [x] capire se i monitor sono giusti -> Non credo sia na cosa fattibile
 - [ ] scrivere a runtime tempo di visita medio e tempo di visita massimo 
-- [ ] scrivere spostamenti dei droni in un log dedicato
+- [x] scrivere spostamenti dei droni in un log dedicato
 - [ ] pulire la repository da file vecchi
 - [ ] Scrivere un bel [README](README.md)
 

@@ -38,3 +38,13 @@ pass.txt
 /.vscode
 /libpqxx-7.7.5
 
+# Nella relazione 
+/Relazione/image
+*.ind
+*.ilg
+*.idx
+*.fls
+*.fdb_latexmk
+*.aux
+*.gz
+*.toc

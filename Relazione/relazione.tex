@@ -952,15 +952,41 @@ La funzione che la torre di controllo utilizza per decidere la prossima posizion
 \end{lstlisting}
 \section{Risultati Sperimentali}
 \paragraph*{Premessa:} Pur essendo il progetto proposto già di per sé simulativo, ma strettamente legato al concetto di tempo, per mostrarne i risultati sarebbero necessari dei reali test su lunghi periodi di tempo sfruttando l'appropriato hardware (torre e droni).
-Per risolvere questo ostacolo è stato implementato in python uno script che esegue esattamente le stesse azioni dell'algoritmo alla base del sistema principale, simulando a livello più alto il comportamento dei droni e della torre di controllo.
 
-Lo script risulta quindi essere una rappresentazione del concetto e delle idee che ci sono alla base della realizzazione del protocollo di guida dei droni e la sua esecuzione può mostrare un "time lapse" di quello che accadrebbe se si facesse avviare il programma con i dati parametri, fornendo alla fine un resoconto sul comportamento del programma e sulle prestazioni dello stesso.
-In particolare lo script riporta il tempo di visita medio e massimo dell'area oltre che salvare un'immagine dell'area evidenziando le zone viste più di recente (colori freddi) e meno di recente (colori caldi) su valori normalizzati.
+Per risolvere questo ostacolo è stato implementato in python uno script che simula esattamente le stesse azioni dell'algoritmo alla base del protocollo di guida dei droni del sistema principale, emulando a livello più alto il comportamento dei droni e della torre di controllo.
 
-Per tanto seppure il programma emula il comportamento della torre, tali risultati sono da considerarsi "valori attesi" in quanto nella simulazione non vengono considerati aspetti come le latenze tra l'invio di un messaggio e la ricezione della risposta.
+I seguenti risultati sono presi dalla simulazione per tanto seppure il programma emula il comportamento del sistema originale, tali risultati sono da considerarsi "valori attesi" in quanto nella simulazione non vengono considerati aspetti come le latenze tra l'invio di un messaggio e la ricezione della risposta.
 
-\begin{figure}
-    \centering
+
+Segue una tabella riassuntiva dei tempi medi e massimi con varie dimensioni di area (sempre quadrati equilateri) e numero di droni:
+\[  \large
+\renewcommand{\arraystretch}{1.5}
+    \begin{array}{|c|c|c|c|c|c|c|}
+        \hline
+        & \multicolumn{2}{c|}{1\ km^2} & \multicolumn{2}{c|}{3\ km^2}& \multicolumn{2}{c|}{6\ km^2}\\
+        \text{n°\ droni}& \text{avg. time}  & \text{max. time}  & \text{avg. time} & \text{max. time}  & \text{avg. time} & \text{max. time} \\
+        \hline
+        1 & 4h: 7m  & 12h & 5h: 49& 12h & 5h: 58m & 12h\\ 
+        \hline
+        4 & 2h: 37m & 7h: 21m & 5h: 36m & 12h & 5h: 56m & 12h \\
+        \hline
+        16 & 27m & 3h & 3h: 25 & 9h: 51m & 5h: 28m & 12h \\
+        \hline    
+        64 & 9m  & 55m & 1h: 3m & 58m & 3h: 49m & 12h \\
+        \hline
+        256 & 2m & 14m & 17m & 1h : 24m & 1h: 16m & 3h: 35m \\ 
+        \hline
+        400 & 1m: 33s & 15m & 12m & 1h: 17m & 52m & 3h: 28m \\ 
+        \hline
+        600 & 0m: 58s & 25m & 7m & 43m & 35m & 2h: 32m \\ 
+        \hline
+        1000 & 0m: 36s & 25m & 5m & 30m & 22m & 1h: 52m \\ 
+        \hline
+        2000 & 0m: 15s & 17m & 3m & 23m & 13m & 1h: 27m \\ 
+        \hline
+    \end{array}
+\]
+Altri risultati rappresentati graficamente: \\
     \begin{tikzpicture}
         \begin{axis}[
             title={Risultato con area di un $1Km^2$},
@@ -991,19 +1017,16 @@ Per tanto seppure il programma emula il comportamento della torre, tali risultat
             coordinates {
                 (10,180)
                 (20,54.20)
-                (40,27.65)
-                (80,29)
+                (40,29)
+                (80,27.65)
                 (160,17)
             };
         \addlegendentry{tempo di visita massimo}
         \end{axis}
     \end{tikzpicture}
-    \caption{Descrizione del grafico.}
-    \label{fig:my_plot}
-\end{figure}
 
-\begin{figure}
-    \centering
+
+
     \begin{tikzpicture}
         \begin{axis}[
             title={Risultato con area di un $2Km^2$},
@@ -1011,7 +1034,7 @@ Per tanto seppure il programma emula il comportamento della torre, tali risultat
             ylabel={Minuti},
             grid=major,
             width=\textwidth,
-            height=0.5\textwidth,
+            height=0.45\textwidth,
             legend style={at={(0.5,-0.15)},anchor=north,legend columns=-1}
         ]
         \addplot[
@@ -1026,7 +1049,7 @@ Per tanto seppure il programma emula il comportamento della torre, tali risultat
                 (300,6.52)
                 (400,5)
             };
-        \addlegendentry{tempo di visita medio}
+
 
         \addplot[
             color=red,
@@ -1035,20 +1058,109 @@ Per tanto seppure il programma emula il comportamento della torre, tali risultat
             coordinates {
                 (50,81)
                 (100,43)
-                (150,55)
-                (200,42)
+                (150,42)
+                (200,40)
                 (300,35)
                 (400,28)
+            };
+
+        \end{axis}
+    \end{tikzpicture}
+
+    \begin{tikzpicture}
+        \begin{axis}[
+            title={Risultato con area di un $3Km^2$},
+            xlabel={Numero di droni},
+            ylabel={Minuti},
+            grid=major,
+            width=\textwidth,
+            height=0.45\textwidth,
+            legend style={at={(0.5,-0.15)},anchor=north,legend columns=-1}
+        ]
+        \addplot[
+            color=blue,
+            mark=square,
+            ]
+            coordinates {
+                (1,349)
+                (4,336)
+                (16,205)
+                (64,63)
+                (256,17)
+                (400,12)
+                (600,7)
+                (1000,5)
+                (2000,3)
+            };
+
+
+        \addplot[
+            color=red,
+            mark=triangle,
+            ]
+            coordinates {
+                (1,720)
+                (4,720)
+                (16,591)
+                (64,158)
+                (256,77)
+                (400,84)
+                (600,43)
+                (1000,30)
+                (2000,23)
+            };
+
+        \end{axis}
+    \end{tikzpicture}
+  
+
+    \begin{tikzpicture}
+        \begin{axis}[
+            title={Risultato con area di un $6Km^2$},
+            xlabel={},
+            ylabel={Minuti},
+            grid=major,
+            width=\textwidth,
+            height=0.45\textwidth,
+            legend style={at={(0.5,-0.15)},anchor=north,legend columns=-1}
+        ]
+        \addplot[
+            color=blue,
+            mark=square,
+            ]
+            coordinates {
+                (1,358)
+                (4,356)
+                (16,328)
+                (64,229)
+                (256,76)
+                (400,52)
+                (600,35)
+                (1000,22)
+                (2000,13)
+            };
+        \addlegendentry{tempo di visita medio}
+
+        \addplot[
+            color=red,
+            mark=triangle,
+            ]
+            coordinates {
+                (1,720)
+                (4,720)
+                (16,720)
+                (64,720)
+                (256,215)
+                (400,208)
+                (600,152)
+                (1000,112)
+                (2000,87)
             };
         \addlegendentry{tempo di visita massimo}
         \end{axis}
     \end{tikzpicture}
-    \caption{Descrizione del grafico.}
-    \label{fig:my_plot}
-\end{figure}
-
-
-
-
+    Nella cartella "Algoritmo/salvataggi" sono presenti alcuni screenshot della matrice che rappresenta l'area monitorata.
+    I punti dal visitato meno recentemente al più recente sono riportati con colori dal più caldo al più freddo.\\
+    Le lables delle immagini sono immagini indicano \verb|{numero di droni}_{lato dell'area}_{ore simulate}|
 \end{document}
 

@@ -1,7 +1,3 @@
-
-import numpy as np
-
-
 class Drone:
     def __init__(self, max_time_of_fly, position, id):
         self.id = id
