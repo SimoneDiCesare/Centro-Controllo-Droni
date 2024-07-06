@@ -45,6 +45,7 @@ Tower::Tower(int droneCount, int areaWidth, int areaHeight, int cellTollerance) 
     this->channel = nullptr;
     this->db = nullptr;
     this->messageCounter = 0;
+    this->cellTollerance = cellTollerance;
     // Initialize Area
     logi("Initializing Area");
     this->areaWidth = areaWidth;
