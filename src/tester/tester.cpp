@@ -14,11 +14,25 @@ namespace fs = std::filesystem;
 int NUMS_DRONES = MAX_DRONES;
 float eS = 1;
 
+void handleSignal(int signal) {
+    switch (signal) {
+        case SIGINT:
+            logInfo("Tester", "Waiting Simulation to finish");
+            break;
+        case SIGTERM:
+            logInfo("Tester", "Waiting Simulation to finish");
+            break;
+        default:
+            logDebug("Tower", "Signal not handled: " + std::to_string(signal));
+            break;
+    }
+}
+
 // Funzione eseguita da ciascun thread
 void* threadFunction(void* arg) {
     long threadId = (long) arg;
     logInfo("Tester", "Thread " + std::to_string(threadId) + " in esecuzione");
-    std::string executable = "./bin/drone_exe";
+    std::string executable = "./bin/drone";
     std::string parameter = std::to_string(eS);
     std::string command = executable + " " + parameter;
     int exit_code = std::system(command.c_str());
@@ -64,7 +78,7 @@ void checkLogs() {
                 if (fileExtension == "log") {
                     logInfo("Tester", "Monitoring file " + entry.path().filename().string());
                     // Costruisci il comando completo includendo il parametro
-                    std::string executable = "./bin/monitor_exe";
+                    std::string executable = "./bin/log_monitor";
                     std::string parameter = entry.path().filename().string(); // Passa il percorso completo del file
                     std::string command = executable + " \"" + parameter + "\"";
                     // Esegui il comando
@@ -85,6 +99,9 @@ void checkLogs() {
 int main(int argc, char* argv[]) {
     logVerbose(true);
     logOpen("tester.log");
+    // Register for optimal handling
+    signal(SIGINT, handleSignal);
+    signal(SIGTERM, handleSignal);
     if (argc >= 2) {
         eS = std::stof(argv[1]);
     }
@@ -102,7 +119,7 @@ int main(int argc, char* argv[]) {
         exit(-1);
     } else if (tpid == 0) {
         // Child -> run tower
-        const char *argv[] = {"./bin/tower_exe",  std::to_string(NUMS_DRONES).c_str(), NULL};
+        const char *argv[] = {"./bin/tower", std::to_string(NUMS_DRONES).c_str(), NULL};
         // Sostituisce il processo figlio con tower_exe
         int code = execvp(argv[0], (char *const *)argv);
         if (code == -1) {

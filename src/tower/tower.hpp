@@ -35,7 +35,7 @@ class Tower {
         /**
          * @brief Constructor of Tower class.
          */
-        Tower(int droneCount, int areaWidth, int areaHeight);
+        Tower(int droneCount, int areaWidth, int areaHeight, int cellTollerance);
         /**
          * @brief Destructor of Tower class.
          */
@@ -160,18 +160,19 @@ class Tower {
         */
         void calculateStatistics();
         // Params
-        static bool running;            ///< Checks if a tower is online. Is static for hanglind system signals.
-        Channel* channel;               ///< The redis channel used for comunications.
-        Postgre* db;                    ///< The postgre db used for storing useful data.
-        long long messageCounter;       ///< Counter for generating uniques messages ids.
-        std::mutex messageCounterLock;  ///< Mutex used for r/w messageCounter in safety.
-        Area *area;                     ///< The area monitored by this tower.
-        int x;                          ///< The x location on the area of the tower.
-        int y;                          ///< The y location on the area of the tower.
-        int areaWidth;                  ///< The area width.
-        int areaHeight;                 ///< The area height.
-        int startTime;                  ///< The start time of simulation.
-        std::vector<unsigned long long> avgs;        ///< Simulation Purpose: Al avgg calculated.
+        static bool running;                    ///< Checks if a tower is online. Is static for hanglind system signals.
+        Channel* channel;                       ///< The redis channel used for comunications.
+        Postgre* db;                            ///< The postgre db used for storing useful data.
+        long long messageCounter;               ///< Counter for generating uniques messages ids.
+        std::mutex messageCounterLock;          ///< Mutex used for r/w messageCounter in safety.
+        Area *area;                             ///< The area monitored by this tower.
+        int x;                                  ///< The x location on the area of the tower.
+        int y;                                  ///< The y location on the area of the tower.
+        int areaWidth;                          ///< The area width.
+        int areaHeight;                         ///< The area height.
+        int startTime;                          ///< The start time of simulation.
+        int cellTollerance;                     ///< The time elapsed for not visiting a cell.
+        std::vector<unsigned long long> avgs;   ///< Simulation Purpose: Al avgg calculated.
 };
 
 #endif  // TOWER_HPP

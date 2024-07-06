@@ -36,4 +36,5 @@
 pass.txt
 *.log
 /.vscode
+/libpqxx-7.7.5
 

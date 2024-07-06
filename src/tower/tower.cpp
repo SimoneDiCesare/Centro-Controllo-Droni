@@ -40,7 +40,7 @@ void logw(std::string message) {
 
 bool Tower::running = false;
 
-Tower::Tower(int droneCount, int areaWidth, int areaHeight) : messageCounterLock() {
+Tower::Tower(int droneCount, int areaWidth, int areaHeight, int cellTollerance) : messageCounterLock() {
     logi("Initializing Tower");
     this->channel = nullptr;
     this->db = nullptr;
@@ -286,7 +286,7 @@ void Tower::calculateStatistics() {
                 visited += 1;
             } else {
                 float elapsed = (Time::nanos() - this->startTime) / 1e9;
-                if (elapsed > 60 * 5) {
+                if (elapsed > this->cellTollerance) {
                     loge("Cell (" + std::to_string(i) + "," + std::to_string(i) + ") is not being visited!");
                 }
                 value = this->startTime;
@@ -312,7 +312,8 @@ void Tower::start() {
         loge("Can't start tower without a connected channel!");
         return;
     }
-
+    // Clean channel before running -> remove garbage from previous simulations
+    this->channel->flush();
     // Register signals
     signal(SIGINT, Tower::handleSignal);
     signal(SIGTERM, Tower::handleSignal);
