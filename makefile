@@ -20,12 +20,14 @@ REDIS_OBJS = $(filter bin/src/redis/%.o, $(TARGETS))
 UTILITY_OBJS = $(filter bin/src/utils/%.o, $(TARGETS))
 POSTGRESQL_OBJS = $(filter bin/src/postgresql/%.o, $(TARGETS))
 MONITOR_OBJS = $(filter bin/src/monitor/%.o, $(TARGETS))
-TESTER_OBJS = $(filter bin/src/tester/%.o, $(TARGETS))
+TESTER_OBJS = bin/src/tester/tester.o
+TOWER_TESTER_OBJS = bin/src/tester/tower_tester.o
+DRONE_TESTER_OBJS = bin/src/tester/drone_tester.o
 DRAWER_OBJS = $(filter bin/src/drawer/%.o, $(TARGETS))
 
 $(shell mkdir -p $(DIRECTORIES))
 
-PROGS := $(BIN_DIR)/tower $(BIN_DIR)/drone $(BIN_DIR)/log_monitor $(BIN_DIR)/tester $(BIN_DIR)/tower_gui
+PROGS := $(BIN_DIR)/tower $(BIN_DIR)/drone $(BIN_DIR)/log_monitor $(BIN_DIR)/tester $(BIN_DIR)/tower_tester $(BIN_DIR)/drone_tester $(BIN_DIR)/tower_gui
 
 all: $(PROGS)
 
@@ -45,6 +47,12 @@ $(BIN_DIR)/log_monitor: $(MONITOR_OBJS)
 	$(CC) $(CCFLAGS) -o $@ $^ $(STD_LIBS)
 
 $(BIN_DIR)/tester: $(TESTER_OBJS) bin/src/utils/log.o
+	$(CC) $(CCFLAGS) -o $@ $^ $(STD_LIBS)
+
+$(BIN_DIR)/tower_tester: $(TOWER_TESTER_OBJS) bin/src/utils/log.o
+	$(CC) $(CCFLAGS) -o $@ $^ $(STD_LIBS)
+
+$(BIN_DIR)/drone_tester: $(DRONE_TESTER_OBJS) bin/src/utils/log.o
 	$(CC) $(CCFLAGS) -o $@ $^ $(STD_LIBS)
 
 clean:

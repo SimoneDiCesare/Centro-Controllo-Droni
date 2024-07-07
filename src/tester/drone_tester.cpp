@@ -10,7 +10,6 @@ namespace fs = std::filesystem;
 
 #define MAX_DRONES 100
 
-
 int NUMS_DRONES = MAX_DRONES;
 float eS = 1;
 
@@ -95,7 +94,7 @@ void checkLogs() {
     }
 }
 
-// ./bin/tester_exe EXECUTION_SPEED EXECUTION_TIME DRONE_COUNT WIDTH HEIGHT
+// ./bin/tester_exe EXECUTION_SPEED EXECUTION_TIME DRONE_COUNT
 int main(int argc, char* argv[]) {
     logVerbose(true);
     logOpen("tester.log");
@@ -112,51 +111,30 @@ int main(int argc, char* argv[]) {
     if (argc >= 4) {
         NUMS_DRONES = std::stoi(argv[3]);
     }
-    int width = (argc >= 5)? std::stoi(argv[4]) : 6000;
-    int height = (argc >= 6)? std::stoi(argv[5]) : 6000;
-    pid_t tpid = fork();
-    if (tpid < 0) {
-        logError("Tester", "Errore nella creazione del processo TORRE");
+    pid_t dpid = fork();
+    if (dpid < 0) {
+        logError("Tester", "Errore nella creazione del processo DRONE");
         exit(-1);
-    } else if (tpid == 0) {
-        // Child -> run tower
-        const char *argv[] = {"./bin/tower", std::to_string(NUMS_DRONES).c_str(), std::to_string(width).c_str(), std::to_string(height).c_str(), NULL};
-        // Sostituisce il processo figlio con tower_exe
-        int code = execvp(argv[0], (char *const *)argv);
-        if (code == -1) {
-            logError("Tester", "Errore nell'esecuzione di execvp: " + std::string(strerror(errno)));
-            exit(-1);
-        }
+    } else if (dpid == 0) {
+        // Child -> spawn drones
+        createThreadsInProcess();
     } else {
-        // Father -> spawn drones
-        logInfo("Tester", "TORRE on " + std::to_string(tpid));
-        pid_t dpid = fork();
-        if (dpid < 0) {
-            // Can't spawn drones -> interrupt tower
-            logError("Tester", "Errore nella creazione del processo DRONI");
-            kill(tpid, SIGINT);
-            exit(-1);
-        } else if (dpid == 0) {
-            // Child -> spawn drones
-            createThreadsInProcess();
-        } else { // Father
-            logInfo("Tester", "DRONI on " + std::to_string(dpid));
-            sleep(executionTime);
-            logInfo("Tester", "Fine Esecuzione");
-            kill(tpid, SIGINT);
-            // Wait all process to finish
-            while (true) {
-                int status;
-                pid_t done = wait(&status);
-                if (done == -1) {
-                    if (errno == ECHILD) break; // no more child processes
-                    else {
-                        logInfo("Tester", std::to_string(done) + " exited with status " + std::to_string(status));
-                    }
+        // Father
+        logInfo("Tester", "DRONI on " + std::to_string(dpid));
+        sleep(executionTime);
+        // Wait all process to finish
+        while (true) {
+            int status;
+            pid_t done = wait(&status);
+            if (done == -1) {
+                if (errno == ECHILD) break; // no more child processes
+                else {
+                    logInfo("Tester", std::to_string(done) + " exited with status " + std::to_string(status));
                 }
             }
-            checkLogs();
         }
+        logInfo("Tester", "Fine Esecuzione");
+        checkLogs();
     }
     return 0; 
 }
