@@ -264,7 +264,7 @@ void Tower::areaUpdateLoop() {
     // Not Thread Safe -> does not create problems
     while (this->running) {
         // Arbitrary 60 seconds for showing stats
-        std::this_thread::sleep_for(std::chrono::seconds(60));
+        std::this_thread::sleep_for(std::chrono::seconds(60 * 1));
         if (!this->running) {
             break;
         }
@@ -278,17 +278,16 @@ void Tower::calculateStatistics() {
     unsigned long long media = 0;
     long long max = LLONG_MIN;
     long long min = LLONG_MAX;
-    int tot = 0;
     int visited = 0;
     for(int i = 0; i < this->areaWidth; i++) {
         for(int j = 0; j < this->areaHeight; j++) {
             long long value = this->area->operator[](i)[j];
-            if (value != 0){
+            if (value != 0) {
                 visited += 1;
             } else {
                 float elapsed = (Time::nanos() - this->startTime) / 1e9;
                 if (elapsed > this->cellTollerance) {
-                    loge("Cell (" + std::to_string(i) + "," + std::to_string(i) + ") is not being visited!");
+                    loge("Cell (" + std::to_string(i) + "," + std::to_string(i) + ") is not being visited!" + std::to_string(elapsed));
                 }
                 value = this->startTime;
             }  
@@ -301,7 +300,7 @@ void Tower::calculateStatistics() {
             } 
         }
     }
-    float percentuale =  (static_cast<float>(visited) / tot) * 100;
+    float percentuale =  (static_cast<float>(visited) / (this->areaWidth * this->areaHeight)) * 100;
     media = media / visited;
     this->avgs.emplace_back(media);
     logi("Stats: {visited:" + std::to_string(percentuale) + "%, max:" + std::to_string(max) + ", min:" + std::to_string(min) + ", avg:" + std::to_string(media) + "}");
@@ -319,12 +318,12 @@ void Tower::start() {
     signal(SIGINT, Tower::handleSignal);
     signal(SIGTERM, Tower::handleSignal);
     this->running = true;
+    this->startTime = Time::nanos();
     std::vector<std::thread> threads;
     threads.emplace_back(&Tower::droneCheckLoop, this);
     threads.emplace_back(&Tower::areaUpdateLoop, this);
     threads.emplace_back(&Tower::drawGrid, this);
     logi("Tower online");
-    this -> startTime = Time::nanos();
     while (this->running) {
         // 1' of waiting before restarting the cycle
         Message *message = this->channel->awaitMessage(10);

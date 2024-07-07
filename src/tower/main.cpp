@@ -22,7 +22,7 @@ int main(int argc, char* argv[]) {
     int width = (argc >= 3)? std::stoi(argv[2]) : 6000;
     int height = (argc >= 4)? std::stoi(argv[3]) : 6000;
     // Tollerance of elapsed time for a visited cell in seconds -> default is 5 minutes
-    int cellTollerance = (argc >= 4)? std::stoi(argv[4]) : 60 * 5;
+    int cellTollerance = (argc >= 5)? std::stoi(argv[4]) : 60 * 5;
     int areaWidth = width / GRID_FACTOR;
     int areaHeight = height / GRID_FACTOR;
     logInfo("Init", "Running tower with: " + std::to_string(droneCount) + " " + std::to_string(areaWidth) + " " + std::to_string(areaHeight));

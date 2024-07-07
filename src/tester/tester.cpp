@@ -111,9 +111,11 @@ int main(int argc, char* argv[]) {
     }
     if (argc >= 4) {
         NUMS_DRONES = std::stoi(argv[3]);
+    } else {
+        NUMS_DRONES = 100;
     }
-    int width = (argc >= 5)? std::stoi(argv[4]) : 6000;
-    int height = (argc >= 6)? std::stoi(argv[5]) : 6000;
+    int width = (argc >= 5)? std::stoi(argv[4]) : 500;
+    int height = (argc >= 6)? std::stoi(argv[5]) : 500;
     pid_t tpid = fork();
     if (tpid < 0) {
         logError("Tester", "Errore nella creazione del processo TORRE");

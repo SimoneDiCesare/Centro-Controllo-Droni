@@ -170,7 +170,7 @@ class Tower {
         int y;                                  ///< The y location on the area of the tower.
         int areaWidth;                          ///< The area width.
         int areaHeight;                         ///< The area height.
-        int startTime;                          ///< The start time of simulation.
+        long long startTime;                          ///< The start time of simulation.
         int cellTollerance;                     ///< The time elapsed for not visiting a cell.
         std::vector<unsigned long long> avgs;   ///< Simulation Purpose: Al avgg calculated.
 };

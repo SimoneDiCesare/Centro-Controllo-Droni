@@ -191,12 +191,15 @@ void Drone::start(float executionSpeed) {
             }
         }
     }
+    logi("Running shutdown Procedure");
     // Disconnect drone
     // Wait threads to finish
     for (auto &thread : threads) {
         thread.join();
     }
-
+    logi("Drone Disconnected!");
+    logi("Bye bye");
+    std::exit(0);
 }
 
 void Drone::checkBattery() {
@@ -408,7 +411,9 @@ void Drone::handleMessage(Message *message) {
             } else {
                 logw("Can't flush redis channel");
             }*/
-            std::exit(0);
+            moveTo(this->towerX, this->towerY);
+            logi("Disconnecting");
+            this->running = false;
             break;
         }
         default: {
